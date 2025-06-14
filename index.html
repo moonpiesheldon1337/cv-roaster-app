@@ -7,20 +7,72 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.11.338/pdf.min.js"></script>
+    <!-- Tone.js for sound effects -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.7.77/Tone.min.js"></script>
     <style>
         body { font-family: 'Inter', sans-serif; }
         .glass-card { background: rgba(255, 255, 255, 0.6); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.2); }
         .page { display: none; }
         .page.active { display: block; }
-        #loading-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.7); display: flex; justify-content: center; align-items: center; z-index: 9999; color: white; flex-direction: column; gap: 1rem; transition: opacity 0.3s ease; }
+        #loading-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.8); display: flex; justify-content: center; align-items: center; z-index: 9999; color: white; flex-direction: column; gap: 1rem; transition: opacity 0.3s ease; }
         #loading-overlay.hidden { opacity: 0; pointer-events: none; }
         .spinner { border: 4px solid rgba(255, 255, 255, 0.3); border-left-color: #fff; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; }
         @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* --- NEW: Evil Loading Bar Styles --- */
+        #evil-loader {
+            display: none; /* Hidden by default */
+            flex-direction: column;
+            align-items: center;
+            gap: 1rem;
+        }
+        #progress-container {
+            width: 80%;
+            max-width: 300px;
+            height: 20px;
+            background-color: #4a044e; /* Dark purple */
+            border-radius: 10px;
+            border: 2px solid #a21caf; /* Bright purple */
+            overflow: hidden;
+            box-shadow: 0 0 15px #a21caf;
+        }
+        #progress-bar {
+            width: 0%;
+            height: 100%;
+            background: linear-gradient(90deg, #f0abfc, #a21caf); /* Pink to purple gradient */
+            border-radius: 8px;
+            transition: width 2s ease-in-out;
+        }
+        #evil-laugh {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #f0abfc;
+            text-shadow: 0 0 10px #a21caf;
+            animation: flicker 1.5s infinite alternate;
+        }
+        @keyframes flicker {
+            0%, 18%, 22%, 25%, 53%, 57%, 100% { text-shadow: 0 0 4px #fff, 0 0 11px #fff, 0 0 19px #fff, 0 0 40px #a21caf, 0 0 80px #a21caf, 0 0 90px #a21caf, 0 0 100px #a21caf, 0 0 150px #a21caf; }
+            20%, 24%, 55% { text-shadow: none; }
+        }
     </style>
 </head>
 <body class="bg-gradient-to-br from-indigo-500 to-purple-600 min-h-screen flex items-center justify-center p-4">
 
-    <div id="loading-overlay"><div class="spinner"></div><p>Initializing...</p></div>
+    <div id="loading-overlay">
+        <div id="default-loader">
+            <div class="spinner"></div>
+            <p>Initializing...</p>
+        </div>
+        <!-- NEW: Evil loader container -->
+        <div id="evil-loader">
+            <p id="loading-message">Sharpening my knives...</p>
+            <div id="progress-container">
+                <div id="progress-bar"></div>
+            </div>
+            <div id="evil-laugh">Mwa-ha-ha-ha...</div>
+        </div>
+    </div>
+
     <div id="loginPage" class="page w-full max-w-md"><div class="glass-card rounded-2xl shadow-2xl p-8 text-center"><h1 class="text-4xl font-extrabold text-gray-800 mb-2">🔥 CV Roaster</h1><p class="text-gray-600 mb-6">Sign in to get brutally honest AI feedback on your CV. Let's improve your resume together!</p><button id="loginButton" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl flex items-center justify-center gap-3"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-log-in"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" x2="3" y1="12" y2="12"/></svg> Continue with Google</button><div class="mt-6 text-xs text-gray-500"><p><strong>🔒 Your Privacy Matters:</strong> We only access your basic profile info. Your CV is processed locally and never stored on our servers.</p></div></div></div>
     <div id="appPage" class="page w-full max-w-4xl"><div class="glass-card rounded-2xl shadow-2xl overflow-hidden"><nav class="p-4 flex justify-between items-center border-b border-white/20"><h2 class="text-xl font-bold text-gray-800">🔥 CV Roaster</h2><div id="userInfo" class="flex items-center gap-4"><img id="userAvatar" class="w-10 h-10 rounded-full border-2 border-white/50 shadow-md" src="" alt="User Avatar"><div><p id="userName" class="font-semibold text-gray-700"></p><p id="userEmail" class="text-xs text-gray-600"></p></div><button id="logoutButton" class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-lg transition-all duration-300 text-sm">Logout</button></div></nav><div class="p-8"><div class="text-center mb-8"><h1 class="text-3xl font-extrabold text-gray-800 mb-2">Upload Your CV for a Roast!</h1><p class="text-gray-600 max-w-2xl mx-auto">Drag and drop your PDF file below, or click to select a file. Our AI will give you constructive, and brutally honest, feedback.</p></div><div id="upload-zone" class="border-4 border-dashed border-gray-300 hover:border-indigo-400 rounded-2xl p-10 text-center cursor-pointer transition-all duration-300 bg-white/30 hover:bg-white/50"><input type="file" id="file-input" class="hidden" accept=".pdf"><div class="flex flex-col items-center justify-center text-gray-500"><svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-upload-cloud mb-4"><path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242"/><path d="M12 12v9"/><path d="m16 16-4-4-4 4"/></svg><p class="font-semibold">Drag & Drop your PDF here</p><p class="text-sm">or click to browse</p></div></div><div id="file-preview" class="hidden mt-6 bg-white/50 p-4 rounded-xl flex items-center justify-between shadow-inner"><div class="flex items-center gap-3"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-file-text text-red-500"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/></svg><div><p id="file-name" class="font-semibold text-gray-700"></p><p id="file-size" class="text-xs text-gray-600"></p></div></div><button id="remove-file" class="text-red-500 hover:text-red-700 font-bold">&times;</button></div><div class="text-center mt-6"><button id="roast-btn" class="bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-600 hover:to-orange-600 text-white font-bold py-4 px-10 rounded-full transition-all duration-300 shadow-xl text-lg disabled:opacity-50 disabled:cursor-not-allowed" disabled>🔥 Roast My CV!</button></div><div id="results" class="hidden mt-8"><h2 class="text-2xl font-bold text-gray-800 text-center mb-6">The Roast is In! 🌶️</h2><div id="roast-content" class="bg-white/50 p-6 rounded-xl space-y-4 prose max-w-none"></div></div></div></div></div>
 
@@ -30,7 +82,6 @@
         import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
         import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-analytics.js";
-        // Import Functions module
         import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-functions.js";
 
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.11.338/pdf.worker.min.js';
@@ -60,57 +111,45 @@
         const loginButton = document.getElementById('loginButton');
         const logoutButton = document.getElementById('logoutButton');
         const loadingOverlay = document.getElementById('loading-overlay');
+        const defaultLoader = document.getElementById('default-loader');
+        const evilLoader = document.getElementById('evil-loader');
+        const progressBar = document.getElementById('progress-bar');
         
         function showPage(pageId) { 
             document.querySelectorAll('.page').forEach(p => p.classList.remove('active')); 
             document.getElementById(pageId)?.classList.add('active'); 
         }
         
-        function showLoading(show, message = 'Loading...') { 
-            loadingOverlay.querySelector('p').textContent = message; 
-            loadingOverlay.classList.toggle('hidden', !show); 
+        function showLoading(show, message = 'Loading...', isEvil = false) {
+            if (show) {
+                if (isEvil) {
+                    defaultLoader.style.display = 'none';
+                    evilLoader.style.display = 'flex';
+                    document.getElementById('loading-message').textContent = message;
+                } else {
+                    defaultLoader.style.display = 'block';
+                    evilLoader.style.display = 'none';
+                    defaultLoader.querySelector('p').textContent = message;
+                }
+            }
+            loadingOverlay.classList.toggle('hidden', !show);
         }
         
         const provider = new GoogleAuthProvider();
-        
         async function signInWithGoogle() { 
-            showLoading(true, 'Redirecting...'); 
-            try {
-                await signInWithPopup(auth, provider);
-            } catch (err) {
-                console.error(err); 
-                showLoading(false); 
-            }
+            showLoading(true, 'Redirecting...');
+            try { await signInWithPopup(auth, provider); } catch (err) { console.error(err); showLoading(false); }
         }
-        
         async function performSignOut() { 
-            showLoading(true, 'Signing out...'); 
-            try {
-                await signOut(auth);
-            } catch (err) {
-                console.error(err); 
-                showLoading(false); 
-            }
+            showLoading(true, 'Signing out...');
+            try { await signOut(auth); } catch (err) { console.error(err); showLoading(false); }
         }
-        
         onAuthStateChanged(auth, user => { 
-            if (user) { 
-                updateUIForUser(user); 
-                showPage('appPage'); 
-            } else { 
-                showPage('loginPage'); 
-            } 
+            showLoading(true, 'Initializing...');
+            if (user) { updateUIForUser(user); showPage('appPage'); } else { showPage('loginPage'); } 
             showLoading(false); 
         });
-        
-        function updateUIForUser(user) { 
-            if (user) { 
-                document.getElementById('userName').textContent = user.displayName; 
-                document.getElementById('userEmail').textContent = user.email; 
-                document.getElementById('userAvatar').src = user.photoURL; 
-            } 
-        }
-        
+        function updateUIForUser(user) { if (user) { document.getElementById('userName').textContent = user.displayName; document.getElementById('userEmail').textContent = user.email; document.getElementById('userAvatar').src = user.photoURL; } }
         loginButton.addEventListener('click', signInWithGoogle);
         logoutButton.addEventListener('click', performSignOut);
 
@@ -127,25 +166,28 @@
         let uploadedFile = null;
         
         uploadZone.addEventListener('click', () => fileInput.click());
-        fileInput.addEventListener('change', (e) => { 
-            if (e.target.files.length > 0) handleFile(e.target.files[0]); 
-        });
-        
-        function handleFile(file) { 
-            uploadedFile = file; 
-            fileNameEl.textContent = file.name; 
-            fileSizeEl.textContent = `${(file.size / 1024 / 1024).toFixed(2)} MB`; 
-            filePreview.classList.remove('hidden'); 
-            roastBtn.disabled = false; 
+        fileInput.addEventListener('change', (e) => { if (e.target.files.length > 0) handleFile(e.target.files[0]); });
+        function handleFile(file) { uploadedFile = file; fileNameEl.textContent = file.name; fileSizeEl.textContent = `${(file.size / 1024 / 1024).toFixed(2)} MB`; filePreview.classList.remove('hidden'); roastBtn.disabled = false; }
+        removeFileBtn.addEventListener('click', () => { uploadedFile = null; fileInput.value = ''; filePreview.classList.add('hidden'); roastBtn.disabled = true; resultsSection.classList.add('hidden'); });
+
+        // --- NEW: Tone.js Evil Laugh ---
+        let synth;
+        function playEvilLaugh() {
+            if (typeof Tone === 'undefined') return;
+            // Create the synth only once
+            if (!synth) {
+                synth = new Tone.Synth({
+                    oscillator: { type: 'sine' },
+                    envelope: { attack: 0.005, decay: 0.1, sustain: 0.3, release: 1 }
+                }).toDestination();
+            }
+            const now = Tone.now();
+            synth.triggerAttackRelease("C4", "8n", now);
+            synth.triggerAttackRelease("A3", "8n", now + 0.2);
+            synth.triggerAttackRelease("G3", "8n", now + 0.4);
+            synth.triggerAttackRelease("E3", "8n", now + 0.6);
+            synth.triggerAttackRelease("C3", "4n", now + 0.8);
         }
-        
-        removeFileBtn.addEventListener('click', () => { 
-            uploadedFile = null; 
-            fileInput.value = ''; 
-            filePreview.classList.add('hidden'); 
-            roastBtn.disabled = true; 
-            resultsSection.classList.add('hidden'); 
-        });
 
         async function extractPDFContent(file) {
             const arrayBuffer = await file.arrayBuffer();
@@ -163,25 +205,24 @@
             try {
                 const roastCV = httpsCallable(functions, 'roastCV');
                 const result = await roastCV({ text: cvContent });
-                
-                // Check if markdown-it is available
-                if (typeof markdownit !== 'undefined') {
-                    const md = markdownit();
-                    return md.render(result.data.roast);
-                } else {
-                    // Fallback: simple text formatting
-                    return `<pre style="white-space: pre-wrap; font-family: inherit;">${result.data.roast}</pre>`;
-                }
+                const md = window.markdownit();
+                return md.render(result.data.roast);
 
             } catch (error) {
                 console.error("Cloud Function Error:", error);
-                throw new Error(`The Cloud Function failed. ${error.message || 'Unknown error'}`);
+                throw new Error(`The Cloud Function failed. ${error.message}`);
             }
         }
 
         roastBtn.addEventListener('click', async () => {
             if (!uploadedFile) return;
-            showLoading(true, 'Sharpening my knives...');
+            
+            // --- NEW: Trigger evil loading animation ---
+            showLoading(true, 'Sharpening my knives...', true);
+            playEvilLaugh(); // Play the sound
+            progressBar.style.width = '0%'; // Reset progress bar
+            setTimeout(() => { progressBar.style.width = '100%'; }, 100); // Start animation
+
             roastBtn.disabled = true;
             resultsSection.classList.add('hidden');
             
