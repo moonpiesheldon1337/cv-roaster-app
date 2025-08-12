@@ -4,11 +4,32 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AI CV Roaster 🔥</title>
+    
+    <!-- Security Headers -->
+    <meta http-equiv="Content-Security-Policy" 
+          content="default-src 'self' https://cdnjs.cloudflare.com https://cdn.tailwindcss.com https://fonts.googleapis.com https://fonts.gstatic.com https://www.gstatic.com https://cvroast-b2f62.firebaseapp.com https://cvroast-b2f62.firebasestorage.app https://us-central1-cvroast-b2f62.cloudfunctions.net; 
+                   script-src 'self' https://cdnjs.cloudflare.com https://cdn.tailwindcss.com https://www.gstatic.com 'unsafe-inline'; 
+                   style-src 'self' https://fonts.googleapis.com https://cdn.tailwindcss.com 'unsafe-inline'; 
+                   font-src https://fonts.gstatic.com; 
+                   connect-src 'self' https://cvroast-b2f62.firebaseapp.com https://us-central1-cvroast-b2f62.cloudfunctions.net https://www.google-analytics.com;">
+    
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.11.338/pdf.min.js"></script>
-    <!-- Tone.js for sound effects -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.7.77/Tone.min.js"></script>
+    
+    <!-- PDF.js with integrity check -->
+    <script 
+        src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.11.338/pdf.min.js"
+        integrity="sha512-AIbOELdnSH8c0VyHqV3LF7k4vIZSNpm6yJLnMLGGxhZdyj4rH20IWWa7BzZt9k3zYWmvqDKH8XKFiVm3Wh4SIw=="
+        crossorigin="anonymous">
+    </script>
+    
+    <!-- Tone.js with integrity check -->
+    <script 
+        src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.7.77/Tone.min.js"
+        integrity="sha512-2Xtm6e0/ZJpVx6dw+jDhfmMz2E3M2j3lJnfJ8t3i2JhKjKrJAKNVh/VCpKxuGcCXBK5rUu5Lg0bfhv4gDBv9vg=="
+        crossorigin="anonymous">
+    </script>
+    
     <style>
         body { font-family: 'Inter', sans-serif; }
         .glass-card { background: rgba(255, 255, 255, 0.6); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.2); }
@@ -19,9 +40,9 @@
         .spinner { border: 4px solid rgba(255, 255, 255, 0.3); border-left-color: #fff; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; }
         @keyframes spin { to { transform: rotate(360deg); } }
 
-        /* --- NEW: Evil Loading Bar Styles --- */
+        /* Evil Loading Bar Styles */
         #evil-loader {
-            display: none; /* Hidden by default */
+            display: none;
             flex-direction: column;
             align-items: center;
             gap: 1rem;
@@ -30,16 +51,16 @@
             width: 80%;
             max-width: 300px;
             height: 20px;
-            background-color: #4a044e; /* Dark purple */
+            background-color: #4a044e;
             border-radius: 10px;
-            border: 2px solid #a21caf; /* Bright purple */
+            border: 2px solid #a21caf;
             overflow: hidden;
             box-shadow: 0 0 15px #a21caf;
         }
         #progress-bar {
             width: 0%;
             height: 100%;
-            background: linear-gradient(90deg, #f0abfc, #a21caf); /* Pink to purple gradient */
+            background: linear-gradient(90deg, #f0abfc, #a21caf);
             border-radius: 8px;
             transition: width 2s ease-in-out;
         }
@@ -63,7 +84,6 @@
             <div class="spinner"></div>
             <p>Initializing...</p>
         </div>
-        <!-- NEW: Evil loader container -->
         <div id="evil-loader">
             <p id="loading-message">Sharpening my knives...</p>
             <div id="progress-container">
@@ -73,15 +93,87 @@
         </div>
     </div>
 
-    <div id="loginPage" class="page w-full max-w-md"><div class="glass-card rounded-2xl shadow-2xl p-8 text-center"><h1 class="text-4xl font-extrabold text-gray-800 mb-2">🔥 CV Roaster</h1><p class="text-gray-600 mb-6">Sign in to get brutally honest AI feedback on your CV. Let's improve your resume together!</p><button id="loginButton" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl flex items-center justify-center gap-3"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-log-in"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" x2="3" y1="12" y2="12"/></svg> Continue with Google</button><div class="mt-6 text-xs text-gray-500"><p><strong>🔒 Your Privacy Matters:</strong> We only access your basic profile info. Your CV is processed locally and never stored on our servers.</p></div></div></div>
-    <div id="appPage" class="page w-full max-w-4xl"><div class="glass-card rounded-2xl shadow-2xl overflow-hidden"><nav class="p-4 flex justify-between items-center border-b border-white/20"><h2 class="text-xl font-bold text-gray-800">🔥 CV Roaster</h2><div id="userInfo" class="flex items-center gap-4"><img id="userAvatar" class="w-10 h-10 rounded-full border-2 border-white/50 shadow-md" src="" alt="User Avatar"><div><p id="userName" class="font-semibold text-gray-700"></p><p id="userEmail" class="text-xs text-gray-600"></p></div><button id="logoutButton" class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-lg transition-all duration-300 text-sm">Logout</button></div></nav><div class="p-8"><div class="text-center mb-8"><h1 class="text-3xl font-extrabold text-gray-800 mb-2">Upload Your CV for a Roast!</h1><p class="text-gray-600 max-w-2xl mx-auto">Drag and drop your PDF file below, or click to select a file. Our AI will give you constructive, and brutally honest, feedback.</p></div><div id="upload-zone" class="border-4 border-dashed border-gray-300 hover:border-indigo-400 rounded-2xl p-10 text-center cursor-pointer transition-all duration-300 bg-white/30 hover:bg-white/50"><input type="file" id="file-input" class="hidden" accept=".pdf"><div class="flex flex-col items-center justify-center text-gray-500"><svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-upload-cloud mb-4"><path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242"/><path d="M12 12v9"/><path d="m16 16-4-4-4 4"/></svg><p class="font-semibold">Drag & Drop your PDF here</p><p class="text-sm">or click to browse</p></div></div><div id="file-preview" class="hidden mt-6 bg-white/50 p-4 rounded-xl flex items-center justify-between shadow-inner"><div class="flex items-center gap-3"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-file-text text-red-500"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/></svg><div><p id="file-name" class="font-semibold text-gray-700"></p><p id="file-size" class="text-xs text-gray-600"></p></div></div><button id="remove-file" class="text-red-500 hover:text-red-700 font-bold">&times;</button></div><div class="text-center mt-6"><button id="roast-btn" class="bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-600 hover:to-orange-600 text-white font-bold py-4 px-10 rounded-full transition-all duration-300 shadow-xl text-lg disabled:opacity-50 disabled:cursor-not-allowed" disabled>🔥 Roast My CV!</button></div><div id="results" class="hidden mt-8"><h2 class="text-2xl font-bold text-gray-800 text-center mb-6">The Roast is In! 🌶️</h2><div id="roast-content" class="bg-white/50 p-6 rounded-xl space-y-4 prose max-w-none"></div></div></div></div></div>
+    <div id="loginPage" class="page w-full max-w-md">
+        <div class="glass-card rounded-2xl shadow-2xl p-8 text-center">
+            <h1 class="text-4xl font-extrabold text-gray-800 mb-2">🔥 CV Roaster</h1>
+            <p class="text-gray-600 mb-6">Sign in to get brutally honest AI feedback on your CV. Let's improve your resume together!</p>
+            <button id="loginButton" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl flex items-center justify-center gap-3">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-log-in">
+                    <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/>
+                    <polyline points="10 17 15 12 10 7"/>
+                    <line x1="15" x2="3" y1="12" y2="12"/>
+                </svg> 
+                Continue with Google
+            </button>
+            <div class="mt-6 text-xs text-gray-500">
+                <p><strong>🔒 Your Privacy Matters:</strong> We only access your basic profile info. Your CV is processed locally and never stored on our servers.</p>
+            </div>
+        </div>
+    </div>
+
+    <div id="appPage" class="page w-full max-w-4xl">
+        <div class="glass-card rounded-2xl shadow-2xl overflow-hidden">
+            <nav class="p-4 flex justify-between items-center border-b border-white/20">
+                <h2 class="text-xl font-bold text-gray-800">🔥 CV Roaster</h2>
+                <div id="userInfo" class="flex items-center gap-4">
+                    <img id="userAvatar" class="w-10 h-10 rounded-full border-2 border-white/50 shadow-md" src="" alt="User Avatar">
+                    <div>
+                        <p id="userName" class="font-semibold text-gray-700"></p>
+                        <p id="userEmail" class="text-xs text-gray-600"></p>
+                    </div>
+                    <button id="logoutButton" class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-lg transition-all duration-300 text-sm">Logout</button>
+                </div>
+            </nav>
+            <div class="p-8">
+                <div class="text-center mb-8">
+                    <h1 class="text-3xl font-extrabold text-gray-800 mb-2">Upload Your CV for a Roast!</h1>
+                    <p class="text-gray-600 max-w-2xl mx-auto">Drag and drop your PDF file below, or click to select a file. Our AI will give you constructive, and brutally honest, feedback.</p>
+                </div>
+                <div id="upload-zone" class="border-4 border-dashed border-gray-300 hover:border-indigo-400 rounded-2xl p-10 text-center cursor-pointer transition-all duration-300 bg-white/30 hover:bg-white/50">
+                    <input type="file" id="file-input" class="hidden" accept=".pdf">
+                    <div class="flex flex-col items-center justify-center text-gray-500">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-upload-cloud mb-4">
+                            <path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242"/>
+                            <path d="M12 12v9"/>
+                            <path d="m16 16-4-4-4 4"/>
+                        </svg>
+                        <p class="font-semibold">Drag & Drop your PDF here</p>
+                        <p class="text-sm">or click to browse</p>
+                    </div>
+                </div>
+                <div id="file-preview" class="hidden mt-6 bg-white/50 p-4 rounded-xl flex items-center justify-between shadow-inner">
+                    <div class="flex items-center gap-3">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-file-text text-red-500">
+                            <path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/>
+                            <path d="M14 2v4a2 2 0 0 0 2 2h4"/>
+                            <path d="M10 9H8"/>
+                            <path d="M16 13H8"/>
+                            <path d="M16 17H8"/>
+                        </svg>
+                        <div>
+                            <p id="file-name" class="font-semibold text-gray-700"></p>
+                            <p id="file-size" class="text-xs text-gray-600"></p>
+                        </div>
+                    </div>
+                    <button id="remove-file" class="text-red-500 hover:text-red-700 font-bold">&times;</button>
+                </div>
+                <div class="text-center mt-6">
+                    <button id="roast-btn" class="bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-600 hover:to-orange-600 text-white font-bold py-4 px-10 rounded-full transition-all duration-300 shadow-xl text-lg disabled:opacity-50 disabled:cursor-not-allowed" disabled>🔥 Roast My CV!</button>
+                </div>
+                <div id="results" class="hidden mt-8">
+                    <h2 class="text-2xl font-bold text-gray-800 text-center mb-6">The Roast is In! 🌶️</h2>
+                    <div id="roast-content" class="bg-white/50 p-6 rounded-xl space-y-4 prose max-w-none"></div>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <script type="module">
         // Import Firebase modules
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-        import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-analytics.js";
+        import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getAnalytics, logEvent, setUserId } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-analytics.js";
         import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-functions.js";
 
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.11.338/pdf.worker.min.js';
@@ -96,14 +188,71 @@
             measurementId: "G-S5V03WRTTY"
         };
         
-        let app, auth, functions;
+        let app, auth, db, analytics, functions;
         try {
             app = initializeApp(firebaseConfig);
             auth = getAuth(app);
+            db = getFirestore(app);
+            analytics = getAnalytics(app);
             functions = getFunctions(app, 'us-central1');
-            console.log("Firebase and Functions initialized successfully.");
+            console.log("Firebase initialized successfully.");
         } catch (error) {
             console.error("Firebase initialization failed:", error);
+        }
+
+        // Rate limiting class
+        class RateLimit {
+            constructor(maxRequests = 5, timeWindow = 300000) { // 5 requests per 5 minutes
+                this.maxRequests = maxRequests;
+                this.timeWindow = timeWindow;
+                this.requests = [];
+            }
+            
+            canMakeRequest() {
+                const now = Date.now();
+                this.requests = this.requests.filter(time => now - time < this.timeWindow);
+                
+                if (this.requests.length >= this.maxRequests) {
+                    const oldestRequest = Math.min(...this.requests);
+                    const waitTime = this.timeWindow - (now - oldestRequest);
+                    return { allowed: false, waitTime: Math.ceil(waitTime / 1000) };
+                }
+                
+                this.requests.push(now);
+                return { allowed: true };
+            }
+        }
+
+        const rateLimiter = new RateLimit();
+
+        // User activity logging functions
+        async function logUserActivity(activityType, details = {}) {
+            const user = auth.currentUser;
+            if (!user) return;
+            
+            try {
+                // Log to Firestore
+                await addDoc(collection(db, 'user_activity'), {
+                    userId: user.uid,
+                    userEmail: user.email,
+                    userName: user.displayName,
+                    activityType: activityType,
+                    details: details,
+                    timestamp: serverTimestamp(),
+                    userAgent: navigator.userAgent
+                });
+                
+                // Log to Google Analytics
+                logEvent(analytics, activityType, {
+                    user_name: user.displayName,
+                    user_email: user.email,
+                    ...details
+                });
+                
+                console.log('Activity logged:', activityType, details);
+            } catch (error) {
+                console.error('Failed to log activity:', error);
+            }
         }
 
         const loginPage = document.getElementById('loginPage');
@@ -136,20 +285,61 @@
         }
         
         const provider = new GoogleAuthProvider();
+        
         async function signInWithGoogle() { 
             showLoading(true, 'Redirecting...');
-            try { await signInWithPopup(auth, provider); } catch (err) { console.error(err); showLoading(false); }
+            try { 
+                await signInWithPopup(auth, provider); 
+            } catch (err) { 
+                console.error('Sign in error:', err); 
+                showLoading(false); 
+            }
         }
+        
         async function performSignOut() { 
             showLoading(true, 'Signing out...');
-            try { await signOut(auth); } catch (err) { console.error(err); showLoading(false); }
+            try { 
+                await logUserActivity('logout');
+                await signOut(auth); 
+            } catch (err) { 
+                console.error('Sign out error:', err); 
+                showLoading(false); 
+            }
         }
+        
         onAuthStateChanged(auth, user => { 
             showLoading(true, 'Initializing...');
-            if (user) { updateUIForUser(user); showPage('appPage'); } else { showPage('loginPage'); } 
+            if (user) { 
+                // Set user ID for analytics
+                setUserId(analytics, user.uid);
+                
+                // Log user login
+                logUserActivity('login', {
+                    loginMethod: 'google',
+                    firstTimeToday: !localStorage.getItem(`lastLogin_${user.uid}`) || 
+                                  new Date().toDateString() !== localStorage.getItem(`lastLogin_${user.uid}`)
+                });
+                
+                // Remember last login date
+                localStorage.setItem(`lastLogin_${user.uid}`, new Date().toDateString());
+                
+                updateUIForUser(user); 
+                showPage('appPage'); 
+            } else { 
+                setUserId(analytics, null);
+                showPage('loginPage'); 
+            } 
             showLoading(false); 
         });
-        function updateUIForUser(user) { if (user) { document.getElementById('userName').textContent = user.displayName; document.getElementById('userEmail').textContent = user.email; document.getElementById('userAvatar').src = user.photoURL; } }
+        
+        function updateUIForUser(user) { 
+            if (user) { 
+                document.getElementById('userName').textContent = user.displayName; 
+                document.getElementById('userEmail').textContent = user.email; 
+                document.getElementById('userAvatar').src = user.photoURL; 
+            } 
+        }
+        
         loginButton.addEventListener('click', signInWithGoogle);
         logoutButton.addEventListener('click', performSignOut);
 
@@ -167,14 +357,52 @@
         
         uploadZone.addEventListener('click', () => fileInput.click());
         fileInput.addEventListener('change', (e) => { if (e.target.files.length > 0) handleFile(e.target.files[0]); });
-        function handleFile(file) { uploadedFile = file; fileNameEl.textContent = file.name; fileSizeEl.textContent = `${(file.size / 1024 / 1024).toFixed(2)} MB`; filePreview.classList.remove('hidden'); roastBtn.disabled = false; }
-        removeFileBtn.addEventListener('click', () => { uploadedFile = null; fileInput.value = ''; filePreview.classList.add('hidden'); roastBtn.disabled = true; resultsSection.classList.add('hidden'); });
+        
+        // Enhanced file handling with security checks
+        function handleFile(file) {
+            // File type validation
+            if (file.type !== 'application/pdf') {
+                alert('Please upload only PDF files.');
+                return;
+            }
+            
+            // File size validation (max 10MB)
+            const maxSize = 10 * 1024 * 1024; // 10MB in bytes
+            if (file.size > maxSize) {
+                alert('File size must be less than 10MB.');
+                return;
+            }
+            
+            // File name validation (prevent path traversal)
+            const safeName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
+            
+            uploadedFile = file;
+            fileNameEl.textContent = safeName;
+            fileSizeEl.textContent = `${(file.size / 1024 / 1024).toFixed(2)} MB`;
+            filePreview.classList.remove('hidden');
+            roastBtn.disabled = false;
+            
+            // Log file upload
+            logUserActivity('file_uploaded', {
+                fileName: safeName,
+                fileSize: file.size,
+                fileSizeKB: Math.round(file.size / 1024)
+            });
+        }
+        
+        removeFileBtn.addEventListener('click', () => { 
+            logUserActivity('file_removed', { fileName: uploadedFile?.name });
+            uploadedFile = null; 
+            fileInput.value = ''; 
+            filePreview.classList.add('hidden'); 
+            roastBtn.disabled = true; 
+            resultsSection.classList.add('hidden'); 
+        });
 
-        // --- NEW: Tone.js Evil Laugh ---
+        // Tone.js Evil Laugh
         let synth;
         function playEvilLaugh() {
             if (typeof Tone === 'undefined') return;
-            // Create the synth only once
             if (!synth) {
                 synth = new Tone.Synth({
                     oscillator: { type: 'sine' },
@@ -189,39 +417,92 @@
             synth.triggerAttackRelease("C3", "4n", now + 0.8);
         }
 
+        // Enhanced PDF extraction with security limits
         async function extractPDFContent(file) {
-            const arrayBuffer = await file.arrayBuffer();
-            const pdf = await pdfjsLib.getDocument(arrayBuffer).promise;
-            let fullText = '';
-            for (let i = 1; i <= pdf.numPages; i++) {
-                const page = await pdf.getPage(i);
-                const textContent = await page.getTextContent();
-                fullText += textContent.items.map(item => item.str).join(' ') + '\n';
+            try {
+                const arrayBuffer = await file.arrayBuffer();
+                const pdf = await pdfjsLib.getDocument({
+                    data: arrayBuffer,
+                    maxImageSize: 1024 * 1024, // Limit image size
+                    disableFontFace: true, // Security: disable font loading
+                    disableRange: false,
+                    disableStream: false
+                }).promise;
+                
+                // Limit number of pages to process
+                const maxPages = Math.min(pdf.numPages, 20); // Max 20 pages
+                let fullText = '';
+                
+                for (let i = 1; i <= maxPages; i++) {
+                    const page = await pdf.getPage(i);
+                    const textContent = await page.getTextContent();
+                    const pageText = textContent.items.map(item => item.str).join(' ');
+                    fullText += pageText + '\n';
+                    
+                    // Limit total text length
+                    if (fullText.length > 50000) { // 50KB limit
+                        fullText = fullText.substring(0, 50000);
+                        break;
+                    }
+                }
+                
+                return fullText.trim();
+            } catch (error) {
+                console.error('PDF processing error:', error);
+                throw new Error('Unable to process PDF. Please ensure it contains readable text.');
             }
-            return fullText.trim();
         }
 
+        // Enhanced AI roast generation with security
         async function generateAIRoast(cvContent) {
             try {
+                // Validate content length
+                if (cvContent.length < 100) {
+                    throw new Error('CV content appears to be too short. Please ensure your PDF contains readable text.');
+                }
+                
                 const roastCV = httpsCallable(functions, 'roastCV');
                 const result = await roastCV({ text: cvContent });
-                const md = window.markdownit();
+                
+                if (!result.data || !result.data.roast) {
+                    throw new Error('Invalid response from server.');
+                }
+                
+                const md = window.markdownit({
+                    html: false, // Disable HTML tags in markdown for security
+                    breaks: true,
+                    linkify: true
+                });
+                
                 return md.render(result.data.roast);
-
+                
             } catch (error) {
                 console.error("Cloud Function Error:", error);
-                throw new Error(`The Cloud Function failed. ${error.message}`);
+                throw new Error('Unable to process your CV at this time. Please try again later.');
             }
         }
 
         roastBtn.addEventListener('click', async () => {
             if (!uploadedFile) return;
             
-            // --- NEW: Trigger evil loading animation ---
+            // Check rate limit
+            const rateCheck = rateLimiter.canMakeRequest();
+            if (!rateCheck.allowed) {
+                alert(`Please wait ${rateCheck.waitTime} seconds before making another request.`);
+                return;
+            }
+            
+            // Log CV roast attempt
+            await logUserActivity('cv_roast_started', {
+                fileName: uploadedFile.name,
+                fileSize: uploadedFile.size,
+                fileSizeKB: Math.round(uploadedFile.size / 1024)
+            });
+            
             showLoading(true, 'Sharpening my knives...', true);
-            playEvilLaugh(); // Play the sound
-            progressBar.style.width = '0%'; // Reset progress bar
-            setTimeout(() => { progressBar.style.width = '100%'; }, 100); // Start animation
+            playEvilLaugh();
+            progressBar.style.width = '0%';
+            setTimeout(() => { progressBar.style.width = '100%'; }, 100);
 
             roastBtn.disabled = true;
             resultsSection.classList.add('hidden');
@@ -235,8 +516,24 @@
                 const roastHTML = await generateAIRoast(cvText);
                 roastContent.innerHTML = roastHTML;
                 resultsSection.classList.remove('hidden');
+                
+                // Log successful roast
+                await logUserActivity('cv_roast_completed', {
+                    fileName: uploadedFile.name,
+                    textLength: cvText.length,
+                    success: true
+                });
+                
             } catch (error) {
                 console.error('Error during roasting:', error);
+                
+                // Log failed roast
+                await logUserActivity('cv_roast_failed', {
+                    fileName: uploadedFile.name,
+                    error: error.message,
+                    success: false
+                });
+                
                 roastContent.innerHTML = `<div class="p-4 bg-red-100 text-red-800 rounded-lg"><h3 class="font-bold">Roast Failed!</h3><p>${error.message}</p></div>`;
                 resultsSection.classList.remove('hidden');
             } finally {
@@ -245,6 +542,12 @@
             }
         });
     </script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/markdown-it/12.3.2/markdown-it.min.js"></script>
+    
+    <!-- Markdown-it with integrity check -->
+    <script 
+        src="https://cdnjs.cloudflare.com/ajax/libs/markdown-it/12.3.2/markdown-it.min.js"
+        integrity="sha512-mDMUuocd/BbLJOFOD8xR3ZKZ2paDNUZIDZvw9d7NkKkrYCmHyY4H6QUK/w4MLw6TOF5wn7DHVG6YQqvfLfh9Ig=="
+        crossorigin="anonymous">
+    </script>
 </body>
 </html>
