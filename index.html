@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AI CV Roaster 🔥</title>
 
-    <!-- Content Security Policy -->
+    <!-- Content Security Policy (single, deduped) -->
     <meta http-equiv="Content-Security-Policy"
           content="
             default-src 'self';
@@ -182,13 +182,13 @@
         import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
         import { getAnalytics, logEvent, setUserId } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-analytics.js";
-        import { getFunctions, httpsCallable, connectFunctionsEmulator } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-functions.js";
+        import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-functions.js";
 
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.11.338/pdf.worker.min.js';
         
         const firebaseConfig = {
             apiKey: "AIzaSyBfU68cYcygE_tGE-Z5XoYIZyyU1rqAsT8",
-            authDomain: "cvroast-b2f62.firebaseapp.com", // Back to Firebase hosting for auth
+            authDomain: "cvroast-b2f62.firebaseapp.com",
             projectId: "cvroast-b2f62",
             storageBucket: "cvroast-b2f62.firebasestorage.app",
             messagingSenderId: "489801622191",
@@ -280,18 +280,16 @@
             if (!user) return;
             
             try {
-                // Log to Firestore
                 await addDoc(collection(db, 'user_activity'), {
                     userId: user.uid,
                     userEmail: user.email,
                     userName: user.displayName,
-                    activityType: activityType,
-                    details: details,
+                    activityType,
+                    details,
                     timestamp: serverTimestamp(),
                     userAgent: navigator.userAgent
                 });
                 
-                // Log to Google Analytics
                 logEvent(analytics, activityType, {
                     user_name: user.displayName,
                     user_email: user.email,
@@ -359,17 +357,14 @@
         onAuthStateChanged(auth, user => { 
             showLoading(true, 'Initializing...');
             if (user) { 
-                // Set user ID for analytics
                 setUserId(analytics, user.uid);
                 
-                // Log user login
                 logUserActivity('login', {
                     loginMethod: 'google',
                     firstTimeToday: !localStorage.getItem(`lastLogin_${user.uid}`) || 
-                                  new Date().toDateString() !== localStorage.getItem(`lastLogin_${user.uid}`)
+                                    new Date().toDateString() !== localStorage.getItem(`lastLogin_${user.uid}`)
                 });
                 
-                // Remember last login date
                 localStorage.setItem(`lastLogin_${user.uid}`, new Date().toDateString());
                 
                 updateUIForUser(user); 
@@ -409,29 +404,22 @@
         
         // Enhanced file handling with security checks
         function handleFile(file) {
-            // File type validation
             if (file.type !== 'application/pdf') {
                 alert('Please upload only PDF files.');
                 return;
             }
-            
             // File size validation (max 8MB)
-            const maxSize = 8 * 1024 * 1024; // 8MB in bytes
+            const maxSize = 8 * 1024 * 1024; // 8MB
             if (file.size > maxSize) {
                 alert('File size must be less than 8MB.');
                 return;
             }
-            
-            // File name validation (prevent path traversal)
             const safeName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
-            
             uploadedFile = file;
             fileNameEl.textContent = safeName;
             fileSizeEl.textContent = `${(file.size / 1024 / 1024).toFixed(2)} MB`;
             filePreview.classList.remove('hidden');
             roastBtn.disabled = false;
-            
-            // Log file upload
             logUserActivity('file_uploaded', {
                 fileName: safeName,
                 fileSize: file.size,
@@ -472,29 +460,23 @@
                 const arrayBuffer = await file.arrayBuffer();
                 const pdf = await pdfjsLib.getDocument({
                     data: arrayBuffer,
-                    maxImageSize: 1024 * 1024, // Limit image size
-                    disableFontFace: true, // Security: disable font loading
+                    maxImageSize: 1024 * 1024,
+                    disableFontFace: true,
                     disableRange: false,
                     disableStream: false
                 }).promise;
-                
-                // Limit number of pages to process
-                const maxPages = Math.min(pdf.numPages, 20); // Max 20 pages
+                const maxPages = Math.min(pdf.numPages, 20);
                 let fullText = '';
-                
                 for (let i = 1; i <= maxPages; i++) {
                     const page = await pdf.getPage(i);
                     const textContent = await page.getTextContent();
                     const pageText = textContent.items.map(item => item.str).join(' ');
                     fullText += pageText + '\n';
-                    
-                    // Limit total text length
-                    if (fullText.length > 50000) { // 50KB limit
+                    if (fullText.length > 50000) {
                         fullText = fullText.substring(0, 50000);
                         break;
                     }
                 }
-                
                 return fullText.trim();
             } catch (error) {
                 console.error('PDF processing error:', error);
@@ -505,26 +487,20 @@
         // Enhanced AI roast generation with security
         async function generateAIRoast(cvContent) {
             try {
-                // Validate content length
                 if (cvContent.length < 100) {
                     throw new Error('CV content appears to be too short. Please ensure your PDF contains readable text.');
                 }
-                
                 const roastCV = httpsCallable(functions, 'roastCV');
                 const result = await roastCV({ text: cvContent });
-                
                 if (!result.data || !result.data.roast) {
                     throw new Error('Invalid response from server.');
                 }
-                
                 const md = window.markdownit({
-                    html: false, // Disable HTML tags in markdown for security
+                    html: false,
                     breaks: true,
                     linkify: true
                 });
-                
                 return md.render(result.data.roast);
-                
             } catch (error) {
                 console.error("Cloud Function Error:", error);
                 throw new Error('Unable to process your CV at this time. Please try again later.');
@@ -534,21 +510,19 @@
         roastBtn.addEventListener('click', async () => {
             if (!uploadedFile) return;
             
-            // Check rate limit
             const rateCheck = rateLimiter.canMakeRequest();
             if (!rateCheck.allowed) {
                 alert(`Please wait ${rateCheck.waitTime} seconds before making another request.`);
                 return;
             }
             
-            // Log CV roast attempt
             await logUserActivity('cv_roast_started', {
                 fileName: uploadedFile.name,
                 fileSize: uploadedFile.size,
                 fileSizeKB: Math.round(uploadedFile.size / 1024)
             });
             
-            // NEW: random live progress instead of fixed bar
+            // Random live progress
             startRandomProgress("Warming up the roast…");
             playEvilLaugh();
 
@@ -565,7 +539,6 @@
                 roastContent.innerHTML = roastHTML;
                 resultsSection.classList.remove('hidden');
                 
-                // Log successful roast
                 await logUserActivity('cv_roast_completed', {
                     fileName: uploadedFile.name,
                     textLength: cvText.length,
@@ -575,17 +548,13 @@
                 finishRandomProgress("Roast served!");
             } catch (error) {
                 console.error('Error during roasting:', error);
-                
-                // Log failed roast
                 await logUserActivity('cv_roast_failed', {
                     fileName: uploadedFile.name,
                     error: error.message,
                     success: false
                 });
-                
                 roastContent.innerHTML = `<div class="p-4 bg-red-100 text-red-800 rounded-lg"><h3 class="font-bold">Roast Failed!</h3><p>${error.message}</p></div>`;
                 resultsSection.classList.remove('hidden');
-
                 finishRandomProgress("Something went wrong");
             } finally {
                 roastBtn.disabled = false;
