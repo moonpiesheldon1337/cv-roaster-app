@@ -1,528 +1,326 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI CV Roaster 🔥</title>
-    
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.11.338/pdf.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.7.77/Tone.min.js"></script>
-    
-    <style>
-        body { font-family: 'Inter', sans-serif; }
-        .glass-card { background: rgba(255, 255, 255, 0.6); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.2); }
-        .page { display: none; }
-        .page.active { display: block; }
-        #loading-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.8); display: flex; justify-content: center; align-items: center; z-index: 9999; color: white; flex-direction: column; gap: 1rem; transition: opacity 0.3s ease; }
-        #loading-overlay.hidden { opacity: 0; pointer-events: none; }
-        .spinner { border: 4px solid rgba(255, 255, 255, 0.3); border-left-color: #fff; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; }
-        @keyframes spin { to { transform: rotate(360deg); } }
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI CV Roaster 🔥</title>
 
-        /* Evil Loading Bar Styles */
-        #evil-loader {
-            display: none;
-            flex-direction: column;
-            align-items: center;
-            gap: 1rem;
-        }
-        #progress-container {
-            width: 80%;
-            max-width: 300px;
-            height: 20px;
-            background-color: #4a044e;
-            border-radius: 10px;
-            border: 2px solid #a21caf;
-            overflow: hidden;
-            box-shadow: 0 0 15px #a21caf;
-        }
-        #progress-bar {
-            width: 0%;
-            height: 100%;
-            background: linear-gradient(90deg, #f0abfc, #a21caf);
-            border-radius: 8px;
-            transition: width 2s ease-in-out;
-        }
-        #evil-laugh {
-            font-size: 1.5rem;
-            font-weight: bold;
-            color: #f0abfc;
-            text-shadow: 0 0 10px #a21caf;
-            animation: flicker 1.5s infinite alternate;
-        }
-        @keyframes flicker {
-            0%, 18%, 22%, 25%, 53%, 57%, 100% { text-shadow: 0 0 4px #fff, 0 0 11px #fff, 0 0 19px #fff, 0 0 40px #a21caf, 0 0 80px #a21caf, 0 0 90px #a21caf, 0 0 100px #a21caf, 0 0 150px #a21caf; }
-            20%, 24%, 55% { text-shadow: none; }
-        }
-    </style>
+  <!-- CSP -->
+  <meta http-equiv="Content-Security-Policy"
+    content="
+      default-src 'self';
+      script-src 'self' 'unsafe-inline'
+        https://cdn.tailwindcss.com
+        https://cdnjs.cloudflare.com
+        https://www.gstatic.com
+        https://www.googletagmanager.com
+        https://www.google-analytics.com
+        https://www.gstatic.com/firebasejs/;
+      style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
+      font-src https://fonts.gstatic.com;
+      img-src 'self' data: https:;
+      connect-src 'self'
+        https://*.googleapis.com
+        https://*.firebaseio.com
+        https://*.firebaseapp.com
+        https://us-central1-cvroast-b2f62.cloudfunctions.net
+        https://www.google-analytics.com
+        https://region1.google-analytics.com;
+      frame-src https://accounts.google.com https://cvroast-b2f62.firebaseapp.com;
+      worker-src 'self' blob:;
+      object-src 'none';
+      base-uri 'self';
+      frame-ancestors 'none';
+    ">
+
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.11.338/pdf.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/markdown-it/12.3.2/markdown-it.min.js"></script>
+
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+    .glass-card { background: rgba(255, 255, 255, 0.6); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.2); }
+    .page { display: none; }
+    .page.active { display: block; }
+    #loading-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.8); display: flex; justify-content: center; align-items: center; z-index: 9999; color: white; flex-direction: column; gap: 1rem; transition: opacity 0.3s ease; }
+    #loading-overlay.hidden { opacity: 0; pointer-events: none; }
+    .spinner { border: 4px solid rgba(255, 255, 255, 0.3); border-left-color: #fff; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    #evil-loader {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      gap: 1rem;
+    }
+    #progress-container {
+      width: 80%;
+      max-width: 300px;
+      height: 20px;
+      background-color: #4a044e;
+      border-radius: 10px;
+      border: 2px solid #a21caf;
+      overflow: hidden;
+      box-shadow: 0 0 15px #a21caf;
+    }
+    #progress-bar {
+      width: 0%;
+      height: 100%;
+      background: linear-gradient(90deg, #f0abfc, #a21caf);
+      border-radius: 8px;
+      transition: width 0.6s ease-in-out;
+    }
+    #evil-laugh {
+      font-size: 1.5rem;
+      font-weight: bold;
+      color: #f0abfc;
+      text-shadow: 0 0 10px #a21caf;
+      animation: flicker 1.5s infinite alternate;
+    }
+    @keyframes flicker {
+      0%, 18%, 22%, 25%, 53%, 57%, 100% { text-shadow: 0 0 4px #fff, 0 0 11px #fff, 0 0 19px #fff, 0 0 40px #a21caf, 0 0 80px #a21caf; }
+      20%, 24%, 55% { text-shadow: none; }
+    }
+  </style>
 </head>
 <body class="bg-gradient-to-br from-indigo-500 to-purple-600 min-h-screen flex items-center justify-center p-4">
 
-    <div id="loading-overlay">
-        <div id="default-loader">
-            <div class="spinner"></div>
-            <p>Initializing...</p>
-        </div>
-        <div id="evil-loader">
-            <p id="loading-message">Sharpening my knives...</p>
-            <div id="progress-container">
-                <div id="progress-bar"></div>
-            </div>
-            <div id="evil-laugh">Mwa-ha-ha-ha...</div>
-        </div>
+  <!-- LOADING OVERLAY -->
+  <div id="loading-overlay" class="hidden">
+    <div id="default-loader">
+      <div class="spinner"></div>
+      <p>Initializing...</p>
     </div>
-
-    <div id="loginPage" class="page w-full max-w-md">
-        <div class="glass-card rounded-2xl shadow-2xl p-8 text-center">
-            <h1 class="text-4xl font-extrabold text-gray-800 mb-2">🔥 CV Roaster</h1>
-            <p class="text-gray-600 mb-6">Sign in to get brutally honest AI feedback on your CV. Let's improve your resume together!</p>
-            <button id="loginButton" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl flex items-center justify-center gap-3">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-log-in">
-                    <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/>
-                    <polyline points="10 17 15 12 10 7"/>
-                    <line x1="15" x2="3" y1="12" y2="12"/>
-                </svg> 
-                Continue with Google
-            </button>
-            <div class="mt-6 text-xs text-gray-500">
-                <p><strong>🔒 Your Privacy Matters:</strong> We only access your basic profile info. Your CV is processed locally and never stored on our servers.</p>
-            </div>
-        </div>
+    <div id="evil-loader">
+      <p id="loading-message">Starting…</p>
+      <div id="progress-container">
+        <div id="progress-bar"></div>
+      </div>
+      <div id="evil-laugh">🔥</div>
     </div>
+  </div>
 
-    <div id="appPage" class="page w-full max-w-4xl">
-        <div class="glass-card rounded-2xl shadow-2xl overflow-hidden">
-            <nav class="p-4 flex justify-between items-center border-b border-white/20">
-                <h2 class="text-xl font-bold text-gray-800">🔥 CV Roaster</h2>
-                <div id="userInfo" class="flex items-center gap-4">
-                    <img id="userAvatar" class="w-10 h-10 rounded-full border-2 border-white/50 shadow-md" src="" alt="User Avatar">
-                    <div>
-                        <p id="userName" class="font-semibold text-gray-700"></p>
-                        <p id="userEmail" class="text-xs text-gray-600"></p>
-                    </div>
-                    <button id="logoutButton" class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-lg transition-all duration-300 text-sm">Logout</button>
-                </div>
-            </nav>
-            <div class="p-8">
-                <div class="text-center mb-8">
-                    <h1 class="text-3xl font-extrabold text-gray-800 mb-2">Upload Your CV for a Roast!</h1>
-                    <p class="text-gray-600 max-w-2xl mx-auto">Drag and drop your PDF file below, or click to select a file. Our AI will give you constructive, and brutally honest, feedback.</p>
-                </div>
-                <div id="upload-zone" class="border-4 border-dashed border-gray-300 hover:border-indigo-400 rounded-2xl p-10 text-center cursor-pointer transition-all duration-300 bg-white/30 hover:bg-white/50">
-                    <input type="file" id="file-input" class="hidden" accept=".pdf">
-                    <div class="flex flex-col items-center justify-center text-gray-500">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-upload-cloud mb-4">
-                            <path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242"/>
-                            <path d="M12 12v9"/>
-                            <path d="m16 16-4-4-4 4"/>
-                        </svg>
-                        <p class="font-semibold">Drag & Drop your PDF here</p>
-                        <p class="text-sm">or click to browse</p>
-                    </div>
-                </div>
-                <div id="file-preview" class="hidden mt-6 bg-white/50 p-4 rounded-xl flex items-center justify-between shadow-inner">
-                    <div class="flex items-center gap-3">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-file-text text-red-500">
-                            <path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/>
-                            <path d="M14 2v4a2 2 0 0 0 2 2h4"/>
-                            <path d="M10 9H8"/>
-                            <path d="M16 13H8"/>
-                            <path d="M16 17H8"/>
-                        </svg>
-                        <div>
-                            <p id="file-name" class="font-semibold text-gray-700"></p>
-                            <p id="file-size" class="text-xs text-gray-600"></p>
-                        </div>
-                    </div>
-                    <button id="remove-file" class="text-red-500 hover:text-red-700 font-bold">&times;</button>
-                </div>
-                <div class="text-center mt-6">
-                    <button id="roast-btn" class="bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-600 hover:to-orange-600 text-white font-bold py-4 px-10 rounded-full transition-all duration-300 shadow-xl text-lg disabled:opacity-50 disabled:cursor-not-allowed" disabled>🔥 Roast My CV!</button>
-                </div>
-                <div id="results" class="hidden mt-8">
-                    <h2 class="text-2xl font-bold text-gray-800 text-center mb-6">The Roast is In! 🌶️</h2>
-                    <div id="roast-content" class="bg-white/50 p-6 rounded-xl space-y-4 prose max-w-none"></div>
-                </div>
-            </div>
-        </div>
+  <!-- LOGIN PAGE -->
+  <div id="loginPage" class="page w-full max-w-md">
+    <div class="glass-card rounded-2xl shadow-2xl p-8 text-center">
+      <h1 class="text-4xl font-extrabold text-gray-800 mb-2">🔥 CV Roaster</h1>
+      <p class="text-gray-600 mb-6">Sign in to get brutally honest AI feedback on your CV.</p>
+      <button id="loginButton" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-xl flex items-center justify-center gap-3">
+        Continue with Google
+      </button>
     </div>
+  </div>
 
-    <script type="module">
-        // Import Firebase modules
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-        import { getAnalytics, logEvent, setUserId } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-analytics.js";
-        import { getFunctions, httpsCallable, connectFunctionsEmulator } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-functions.js";
+  <!-- APP PAGE -->
+  <div id="appPage" class="page w-full max-w-4xl">
+    <div class="glass-card rounded-2xl shadow-2xl overflow-hidden">
+      <nav class="p-4 flex justify-between items-center border-b border-white/20">
+        <h2 class="text-xl font-bold text-gray-800">🔥 CV Roaster</h2>
+        <div id="userInfo" class="flex items-center gap-4">
+          <img id="userAvatar" class="w-10 h-10 rounded-full border-2 border-white/50 shadow-md" src="" alt="User Avatar">
+          <div>
+            <p id="userName" class="font-semibold text-gray-700"></p>
+            <p id="userEmail" class="text-xs text-gray-600"></p>
+          </div>
+          <button id="logoutButton" class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-lg">Logout</button>
+        </div>
+      </nav>
+      <div class="p-8">
+        <div class="text-center mb-8">
+          <h1 class="text-3xl font-extrabold text-gray-800 mb-2">Upload Your CV for a Roast!</h1>
+          <p class="text-gray-600">Drag and drop your PDF file below.</p>
+        </div>
+        <div id="upload-zone" class="border-4 border-dashed border-gray-300 hover:border-indigo-400 rounded-2xl p-10 text-center cursor-pointer bg-white/30 hover:bg-white/50">
+          <input type="file" id="file-input" class="hidden" accept=".pdf">
+          <p class="font-semibold">Drag & Drop your PDF here</p>
+          <p class="text-sm">or click to browse</p>
+        </div>
+        <div id="file-preview" class="hidden mt-6 bg-white/50 p-4 rounded-xl flex items-center justify-between shadow-inner">
+          <div class="flex items-center gap-3">
+            <div>
+              <p id="file-name" class="font-semibold text-gray-700"></p>
+              <p id="file-size" class="text-xs text-gray-600"></p>
+            </div>
+          </div>
+          <button id="remove-file" class="text-red-500 hover:text-red-700 font-bold">&times;</button>
+        </div>
+        <div class="text-center mt-6">
+          <button id="roast-btn" class="bg-gradient-to-r from-red-500 to-orange-500 text-white font-bold py-4 px-10 rounded-full disabled:opacity-50" disabled>🔥 Roast My CV!</button>
+        </div>
+        <div id="results" class="hidden mt-8">
+          <h2 class="text-2xl font-bold text-gray-800 text-center mb-6">The Roast is In! 🌶️</h2>
+          <div id="roast-content" class="bg-white/50 p-6 rounded-xl space-y-4 prose max-w-none"></div>
+        </div>
+      </div>
+    </div>
+  </div>
 
-        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.11.338/pdf.worker.min.js';
-        
-        const firebaseConfig = {
-            apiKey: "AIzaSyBfU68cYcygE_tGE-Z5XoYIZyyU1rqAsT8",
-            authDomain: "cvroast-b2f62.firebaseapp.com", // Back to Firebase hosting for auth
-            projectId: "cvroast-b2f62",
-            storageBucket: "cvroast-b2f62.firebasestorage.app",
-            messagingSenderId: "489801622191",
-            appId: "1:489801622191:web:5b1a487900c8cd78d9aa5a",
-            measurementId: "G-S5V03WRTTY"
-        };
-        
-        let app, auth, db, analytics, functions;
-        try {
-            app = initializeApp(firebaseConfig);
-            auth = getAuth(app);
-            db = getFirestore(app);
-            analytics = getAnalytics(app);
-            functions = getFunctions(app, 'us-central1');
-            console.log("Firebase initialized successfully.");
-        } catch (error) {
-            console.error("Firebase initialization failed:", error);
-        }
+  <!-- SCRIPT -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+    import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+    import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+    import { getAnalytics, logEvent, setUserId } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-analytics.js";
+    import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-functions.js";
 
-        // Rate limiting class
-        class RateLimit {
-            constructor(maxRequests = 5, timeWindow = 300000) { // 5 requests per 5 minutes
-                this.maxRequests = maxRequests;
-                this.timeWindow = timeWindow;
-                this.requests = [];
-            }
-            
-            canMakeRequest() {
-                const now = Date.now();
-                this.requests = this.requests.filter(time => now - time < this.timeWindow);
-                
-                if (this.requests.length >= this.maxRequests) {
-                    const oldestRequest = Math.min(...this.requests);
-                    const waitTime = this.timeWindow - (now - oldestRequest);
-                    return { allowed: false, waitTime: Math.ceil(waitTime / 1000) };
-                }
-                
-                this.requests.push(now);
-                return { allowed: true };
-            }
-        }
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.11.338/pdf.worker.min.js';
 
-        const rateLimiter = new RateLimit();
+    const firebaseConfig = {
+      apiKey: "AIzaSyBfU68cYcygE_tGE-Z5XoYIZyyU1rqAsT8",
+      authDomain: "cvroast-b2f62.firebaseapp.com",
+      projectId: "cvroast-b2f62",
+      storageBucket: "cvroast-b2f62.firebasestorage.app",
+      messagingSenderId: "489801622191",
+      appId: "1:489801622191:web:5b1a487900c8cd78d9aa5a",
+      measurementId: "G-S5V03WRTTY"
+    };
 
-        // User activity logging functions
-        async function logUserActivity(activityType, details = {}) {
-            const user = auth.currentUser;
-            if (!user) return;
-            
-            try {
-                // Log to Firestore
-                await addDoc(collection(db, 'user_activity'), {
-                    userId: user.uid,
-                    userEmail: user.email,
-                    userName: user.displayName,
-                    activityType: activityType,
-                    details: details,
-                    timestamp: serverTimestamp(),
-                    userAgent: navigator.userAgent
-                });
-                
-                // Log to Google Analytics
-                logEvent(analytics, activityType, {
-                    user_name: user.displayName,
-                    user_email: user.email,
-                    ...details
-                });
-                
-                console.log('Activity logged:', activityType, details);
-            } catch (error) {
-                console.error('Failed to log activity:', error);
-            }
-        }
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+    const analytics = getAnalytics(app);
+    const functions = getFunctions(app, 'us-central1');
 
-        const loginPage = document.getElementById('loginPage');
-        const appPage = document.getElementById('appPage');
-        const loginButton = document.getElementById('loginButton');
-        const logoutButton = document.getElementById('logoutButton');
-        const loadingOverlay = document.getElementById('loading-overlay');
-        const defaultLoader = document.getElementById('default-loader');
-        const evilLoader = document.getElementById('evil-loader');
-        const progressBar = document.getElementById('progress-bar');
-        
-        function showPage(pageId) { 
-            document.querySelectorAll('.page').forEach(p => p.classList.remove('active')); 
-            document.getElementById(pageId)?.classList.add('active'); 
-        }
-        
-        function showLoading(show, message = 'Loading...', isEvil = false) {
-            if (show) {
-                if (isEvil) {
-                    defaultLoader.style.display = 'none';
-                    evilLoader.style.display = 'flex';
-                    document.getElementById('loading-message').textContent = message;
-                } else {
-                    defaultLoader.style.display = 'block';
-                    evilLoader.style.display = 'none';
-                    defaultLoader.querySelector('p').textContent = message;
-                }
-            }
-            loadingOverlay.classList.toggle('hidden', !show);
-        }
-        
-        const provider = new GoogleAuthProvider();
-        
-        async function signInWithGoogle() { 
-            showLoading(true, 'Redirecting...');
-            try { 
-                await signInWithPopup(auth, provider); 
-            } catch (err) { 
-                console.error('Sign in error:', err); 
-                showLoading(false); 
-            }
-        }
-        
-        async function performSignOut() { 
-            showLoading(true, 'Signing out...');
-            try { 
-                await logUserActivity('logout');
-                await signOut(auth); 
-            } catch (err) { 
-                console.error('Sign out error:', err); 
-                showLoading(false); 
-            }
-        }
-        
-        onAuthStateChanged(auth, user => { 
-            showLoading(true, 'Initializing...');
-            if (user) { 
-                // Set user ID for analytics
-                setUserId(analytics, user.uid);
-                
-                // Log user login
-                logUserActivity('login', {
-                    loginMethod: 'google',
-                    firstTimeToday: !localStorage.getItem(`lastLogin_${user.uid}`) || 
-                                  new Date().toDateString() !== localStorage.getItem(`lastLogin_${user.uid}`)
-                });
-                
-                // Remember last login date
-                localStorage.setItem(`lastLogin_${user.uid}`, new Date().toDateString());
-                
-                updateUIForUser(user); 
-                showPage('appPage'); 
-            } else { 
-                setUserId(analytics, null);
-                showPage('loginPage'); 
-            } 
-            showLoading(false); 
-        });
-        
-        function updateUIForUser(user) { 
-            if (user) { 
-                document.getElementById('userName').textContent = user.displayName; 
-                document.getElementById('userEmail').textContent = user.email; 
-                document.getElementById('userAvatar').src = user.photoURL; 
-            } 
-        }
-        
-        loginButton.addEventListener('click', signInWithGoogle);
-        logoutButton.addEventListener('click', performSignOut);
+    const LOADING_MESSAGES = [
+      "Parsing your PDF…", "Counting buzzwords…", "Measuring fluff density…",
+      "Checking ATS friendliness…", "Scoring impact verbs…", "Benchmarking against peers…",
+      "Spotting typos and clichés…", "Finding actionables…", "Preparing roast…"
+    ];
 
-        const uploadZone = document.getElementById('upload-zone');
-        const fileInput = document.getElementById('file-input');
-        const filePreview = document.getElementById('file-preview');
-        const fileNameEl = document.getElementById('file-name');
-        const fileSizeEl = document.getElementById('file-size');
-        const removeFileBtn = document.getElementById('remove-file');
-        const roastBtn = document.getElementById('roast-btn');
-        const resultsSection = document.getElementById('results');
-        const roastContent = document.getElementById('roast-content');
-        
-        let uploadedFile = null;
-        
-        uploadZone.addEventListener('click', () => fileInput.click());
-        fileInput.addEventListener('change', (e) => { if (e.target.files.length > 0) handleFile(e.target.files[0]); });
-        
-        // Enhanced file handling with security checks
-        function handleFile(file) {
-            // File type validation
-            if (file.type !== 'application/pdf') {
-                alert('Please upload only PDF files.');
-                return;
-            }
-            
-            // File size validation (max 10MB)
-            const maxSize = 10 * 1024 * 1024; // 10MB in bytes
-            if (file.size > maxSize) {
-                alert('File size must be less than 10MB.');
-                return;
-            }
-            
-            // File name validation (prevent path traversal)
-            const safeName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
-            
-            uploadedFile = file;
-            fileNameEl.textContent = safeName;
-            fileSizeEl.textContent = `${(file.size / 1024 / 1024).toFixed(2)} MB`;
-            filePreview.classList.remove('hidden');
-            roastBtn.disabled = false;
-            
-            // Log file upload
-            logUserActivity('file_uploaded', {
-                fileName: safeName,
-                fileSize: file.size,
-                fileSizeKB: Math.round(file.size / 1024)
-            });
+    let progressTimer = null;
+    let progress = 0;
+    function startRandomProgress(message) {
+      document.getElementById('default-loader').style.display = 'none';
+      document.getElementById('evil-loader').style.display = 'flex';
+      document.getElementById('loading-message').textContent = message || "Starting…";
+      document.getElementById('loading-overlay').classList.remove('hidden');
+      progress = 0;
+      document.getElementById('progress-bar').style.width = '0%';
+      progressTimer = setInterval(() => {
+        if (Math.random() < 0.35) {
+          const m = LOADING_MESSAGES[Math.floor(Math.random() * LOADING_MESSAGES.length)];
+          document.getElementById('loading-message').textContent = m;
         }
-        
-        removeFileBtn.addEventListener('click', () => { 
-            logUserActivity('file_removed', { fileName: uploadedFile?.name });
-            uploadedFile = null; 
-            fileInput.value = ''; 
-            filePreview.classList.add('hidden'); 
-            roastBtn.disabled = true; 
-            resultsSection.classList.add('hidden'); 
-        });
+        const bump = 2 + Math.random() * 6;
+        const cap = 90;
+        progress = Math.min(progress + bump, cap);
+        document.getElementById('progress-bar').style.width = `${progress}%`;
+      }, 600);
+    }
+    function finishRandomProgress(finalMessage = "Done!") {
+      if (progressTimer) clearInterval(progressTimer);
+      progress = 100;
+      document.getElementById('progress-bar').style.width = '100%';
+      document.getElementById('loading-message').textContent = finalMessage;
+      setTimeout(() => document.getElementById('loading-overlay').classList.add('hidden'), 300);
+    }
 
-        // Tone.js Evil Laugh
-        let synth;
-        function playEvilLaugh() {
-            if (typeof Tone === 'undefined') return;
-            if (!synth) {
-                synth = new Tone.Synth({
-                    oscillator: { type: 'sine' },
-                    envelope: { attack: 0.005, decay: 0.1, sustain: 0.3, release: 1 }
-                }).toDestination();
-            }
-            const now = Tone.now();
-            synth.triggerAttackRelease("C4", "8n", now);
-            synth.triggerAttackRelease("A3", "8n", now + 0.2);
-            synth.triggerAttackRelease("G3", "8n", now + 0.4);
-            synth.triggerAttackRelease("E3", "8n", now + 0.6);
-            synth.triggerAttackRelease("C3", "4n", now + 0.8);
-        }
+    function showPage(pageId) {
+      document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+      document.getElementById(pageId)?.classList.add('active');
+    }
 
-        // Enhanced PDF extraction with security limits
-        async function extractPDFContent(file) {
-            try {
-                const arrayBuffer = await file.arrayBuffer();
-                const pdf = await pdfjsLib.getDocument({
-                    data: arrayBuffer,
-                    maxImageSize: 1024 * 1024, // Limit image size
-                    disableFontFace: true, // Security: disable font loading
-                    disableRange: false,
-                    disableStream: false
-                }).promise;
-                
-                // Limit number of pages to process
-                const maxPages = Math.min(pdf.numPages, 20); // Max 20 pages
-                let fullText = '';
-                
-                for (let i = 1; i <= maxPages; i++) {
-                    const page = await pdf.getPage(i);
-                    const textContent = await page.getTextContent();
-                    const pageText = textContent.items.map(item => item.str).join(' ');
-                    fullText += pageText + '\n';
-                    
-                    // Limit total text length
-                    if (fullText.length > 50000) { // 50KB limit
-                        fullText = fullText.substring(0, 50000);
-                        break;
-                    }
-                }
-                
-                return fullText.trim();
-            } catch (error) {
-                console.error('PDF processing error:', error);
-                throw new Error('Unable to process PDF. Please ensure it contains readable text.');
-            }
-        }
+    async function logUserActivity(type, details = {}) {
+      const user = auth.currentUser;
+      if (!user) return;
+      await addDoc(collection(db, 'user_activity'), {
+        userId: user.uid, userEmail: user.email, userName: user.displayName,
+        activityType: type, details, timestamp: serverTimestamp(), userAgent: navigator.userAgent
+      });
+      logEvent(analytics, type, { ...details });
+    }
 
-        // Enhanced AI roast generation with security
-        async function generateAIRoast(cvContent) {
-            try {
-                // Validate content length
-                if (cvContent.length < 100) {
-                    throw new Error('CV content appears to be too short. Please ensure your PDF contains readable text.');
-                }
-                
-                const roastCV = httpsCallable(functions, 'roastCV');
-                const result = await roastCV({ text: cvContent });
-                
-                if (!result.data || !result.data.roast) {
-                    throw new Error('Invalid response from server.');
-                }
-                
-                const md = window.markdownit({
-                    html: false, // Disable HTML tags in markdown for security
-                    breaks: true,
-                    linkify: true
-                });
-                
-                return md.render(result.data.roast);
-                
-            } catch (error) {
-                console.error("Cloud Function Error:", error);
-                throw new Error('Unable to process your CV at this time. Please try again later.');
-            }
-        }
+    const loginButton = document.getElementById('loginButton');
+    const logoutButton = document.getElementById('logoutButton');
+    const fileInput = document.getElementById('file-input');
+    const filePreview = document.getElementById('file-preview');
+    const fileNameEl = document.getElementById('file-name');
+    const fileSizeEl = document.getElementById('file-size');
+    const removeFileBtn = document.getElementById('remove-file');
+    const roastBtn = document.getElementById('roast-btn');
+    const resultsSection = document.getElementById('results');
+    const roastContent = document.getElementById('roast-content');
+    const uploadZone = document.getElementById('upload-zone');
+    let uploadedFile = null;
 
-        roastBtn.addEventListener('click', async () => {
-            if (!uploadedFile) return;
-            
-            // Check rate limit
-            const rateCheck = rateLimiter.canMakeRequest();
-            if (!rateCheck.allowed) {
-                alert(`Please wait ${rateCheck.waitTime} seconds before making another request.`);
-                return;
-            }
-            
-            // Log CV roast attempt
-            await logUserActivity('cv_roast_started', {
-                fileName: uploadedFile.name,
-                fileSize: uploadedFile.size,
-                fileSizeKB: Math.round(uploadedFile.size / 1024)
-            });
-            
-            showLoading(true, 'Sharpening my knives...', true);
-            playEvilLaugh();
-            progressBar.style.width = '0%';
-            setTimeout(() => { progressBar.style.width = '100%'; }, 100);
+    const provider = new GoogleAuthProvider();
+    loginButton.addEventListener('click', () => signInWithPopup(auth, provider));
+    logoutButton.addEventListener('click', async () => { await logUserActivity('logout'); await signOut(auth); });
 
-            roastBtn.disabled = true;
-            resultsSection.classList.add('hidden');
-            
-            try {
-                const cvText = await extractPDFContent(uploadedFile);
-                if (!cvText || cvText.trim().length === 0) {
-                    throw new Error('Could not extract text from PDF. Please make sure your PDF contains readable text.');
-                }
-                
-                const roastHTML = await generateAIRoast(cvText);
-                roastContent.innerHTML = roastHTML;
-                resultsSection.classList.remove('hidden');
-                
-                // Log successful roast
-                await logUserActivity('cv_roast_completed', {
-                    fileName: uploadedFile.name,
-                    textLength: cvText.length,
-                    success: true
-                });
-                
-            } catch (error) {
-                console.error('Error during roasting:', error);
-                
-                // Log failed roast
-                await logUserActivity('cv_roast_failed', {
-                    fileName: uploadedFile.name,
-                    error: error.message,
-                    success: false
-                });
-                
-                roastContent.innerHTML = `<div class="p-4 bg-red-100 text-red-800 rounded-lg"><h3 class="font-bold">Roast Failed!</h3><p>${error.message}</p></div>`;
-                resultsSection.classList.remove('hidden');
-            } finally {
-                showLoading(false);
-                roastBtn.disabled = false;
-            }
-        });
-    </script>
-    
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/markdown-it/12.3.2/markdown-it.min.js"></script>
+    onAuthStateChanged(auth, user => {
+      if (user) {
+        setUserId(analytics, user.uid);
+        showPage('appPage');
+        document.getElementById('userName').textContent = user.displayName;
+        document.getElementById('userEmail').textContent = user.email;
+        document.getElementById('userAvatar').src = user.photoURL;
+      } else {
+        setUserId(analytics, null);
+        showPage('loginPage');
+      }
+    });
+
+    uploadZone.addEventListener('click', () => fileInput.click());
+    fileInput.addEventListener('change', e => { if (e.target.files.length > 0) handleFile(e.target.files[0]); });
+    function handleFile(file) {
+      if (file.type !== 'application/pdf') { alert('Only PDF files allowed.'); return; }
+      const maxSize = 8 * 1024 * 1024; // 8 MB
+      if (file.size > maxSize) { alert('File size must be less than 8MB.'); return; }
+      const safeName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
+      uploadedFile = file;
+      fileNameEl.textContent = safeName;
+      fileSizeEl.textContent = `${(file.size / 1024 / 1024).toFixed(2)} MB`;
+      filePreview.classList.remove('hidden');
+      roastBtn.disabled = false;
+      logUserActivity('file_uploaded', { fileName: safeName, fileSize: file.size });
+    }
+    removeFileBtn.addEventListener('click', () => { uploadedFile = null; fileInput.value = ''; filePreview.classList.add('hidden'); roastBtn.disabled = true; resultsSection.classList.add('hidden'); });
+
+    async function extractPDFContent(file) {
+      const arrayBuffer = await file.arrayBuffer();
+      const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+      let text = '';
+      const maxPages = Math.min(pdf.numPages, 20);
+      for (let i = 1; i <= maxPages; i++) {
+        const page = await pdf.getPage(i);
+        const content = await page.getTextContent();
+        text += content.items.map(item => item.str).join(' ') + '\n';
+        if (text.length > 50000) { text = text.substring(0, 50000); break; }
+      }
+      return text.trim();
+    }
+
+    async function generateAIRoast(cvContent) {
+      const roastCV = httpsCallable(functions, 'roastCV');
+      const result = await roastCV({ text: cvContent });
+      const md = window.markdownit({ html: false, breaks: true, linkify: true });
+      return md.render(result.data.roast);
+    }
+
+    roastBtn.addEventListener('click', async () => {
+      if (!uploadedFile) return;
+      await logUserActivity('cv_roast_started', { fileName: uploadedFile.name, fileSize: uploadedFile.size });
+      startRandomProgress("Warming up the roast…");
+      roastBtn.disabled = true;
+      resultsSection.classList.add('hidden');
+      try {
+        const cvText = await extractPDFContent(uploadedFile);
+        if (!cvText) throw new Error('Could not extract text from PDF.');
+        const roastHTML = await generateAIRoast(cvText);
+        roastContent.innerHTML = roastHTML;
+        resultsSection.classList.remove('hidden');
+        await logUserActivity('cv_roast_completed', { fileName: uploadedFile.name, success: true });
+        finishRandomProgress("Roast served!");
+      } catch (err) {
+        roastContent.innerHTML = `<div class="p-4 bg-red-100 text-red-800 rounded-lg"><strong>Roast Failed!</strong><p>${err.message}</p></div>`;
+        resultsSection.classList.remove('hidden');
+        await logUserActivity('cv_roast_failed', { fileName: uploadedFile.name, error: err.message });
+        finishRandomProgress("Something went wrong");
+      } finally {
+        roastBtn.disabled = false;
+      }
+    });
+  </script>
 </body>
-</html>
+</
