@@ -154,13 +154,13 @@
         import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
         import { getAnalytics, logEvent, setUserId } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-analytics.js";
-        import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-functions.js";
+        import { getFunctions, httpsCallable, connectFunctionsEmulator } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-functions.js";
 
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.11.338/pdf.worker.min.js';
         
         const firebaseConfig = {
             apiKey: "AIzaSyBfU68cYcygE_tGE-Z5XoYIZyyU1rqAsT8",
-            authDomain: "moonpiesheldon1337.github.io", // Changed from cvroast-b2f62.firebaseapp.com
+            authDomain: "cvroast-b2f62.firebaseapp.com", // Back to Firebase hosting for auth
             projectId: "cvroast-b2f62",
             storageBucket: "cvroast-b2f62.firebasestorage.app",
             messagingSenderId: "489801622191",
