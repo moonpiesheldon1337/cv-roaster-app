@@ -296,12 +296,12 @@
                 // Log user login
                 logUserActivity('login', {
                     loginMethod: 'google',
-                    firstTimeToday: !localStorage.getItem(lastLogin_${user.uid}) || 
-                                  new Date().toDateString() !== localStorage.getItem(lastLogin_${user.uid})
+                    firstTimeToday: !localStorage.getItem(`lastLogin_${user.uid}`) || 
+                                  new Date().toDateString() !== localStorage.getItem(`lastLogin_${user.uid}`)
                 });
                 
                 // Remember last login date
-                localStorage.setItem(lastLogin_${user.uid}, new Date().toDateString());
+                localStorage.setItem(`lastLogin_${user.uid}`, new Date().toDateString());
                 
                 updateUIForUser(user); 
                 showPage('appPage'); 
@@ -358,7 +358,7 @@
             
             uploadedFile = file;
             fileNameEl.textContent = safeName;
-            fileSizeEl.textContent = ${(file.size / 1024 / 1024).toFixed(2)} MB;
+            fileSizeEl.textContent = `${(file.size / 1024 / 1024).toFixed(2)} MB`;
             filePreview.classList.remove('hidden');
             roastBtn.disabled = false;
             
@@ -468,7 +468,7 @@
             // Check rate limit
             const rateCheck = rateLimiter.canMakeRequest();
             if (!rateCheck.allowed) {
-                alert(Please wait ${rateCheck.waitTime} seconds before making another request.);
+                alert(`Please wait ${rateCheck.waitTime} seconds before making another request.`);
                 return;
             }
             
@@ -514,7 +514,7 @@
                     success: false
                 });
                 
-                roastContent.innerHTML = <div class="p-4 bg-red-100 text-red-800 rounded-lg"><h3 class="font-bold">Roast Failed!</h3><p>${error.message}</p></div>;
+                roastContent.innerHTML = `<div class="p-4 bg-red-100 text-red-800 rounded-lg"><h3 class="font-bold">Roast Failed!</h3><p>${error.message}</p></div>`;
                 resultsSection.classList.remove('hidden');
             } finally {
                 showLoading(false);
