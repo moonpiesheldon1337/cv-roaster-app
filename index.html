@@ -5,11 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AI CV Roaster 🔥</title>
 
-    <!-- Content Security Policy -->
+    <!-- Relaxed Content Security Policy for development -->
     <meta http-equiv="Content-Security-Policy"
       content="
-        default-src 'self';
-        script-src 'self' 'unsafe-inline'
+        default-src 'self' 'unsafe-inline' 'unsafe-eval';
+        script-src 'self' 'unsafe-inline' 'unsafe-eval'
           https://cdn.tailwindcss.com
           https://cdnjs.cloudflare.com
           https://www.gstatic.com
@@ -18,7 +18,7 @@
           https://www.googletagmanager.com
           https://www.google-analytics.com
           https://www.gstatic.com/firebasejs/;
-        style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
+        style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.tailwindcss.com;
         font-src https://fonts.gstatic.com;
         img-src 'self' data: https:;
         connect-src 'self'
@@ -31,14 +31,13 @@
         frame-src https://accounts.google.com https://cvroast-b2f62.firebaseapp.com;
         worker-src 'self' blob: https://cdnjs.cloudflare.com;
         object-src 'none';
-        base-uri 'self';
-        frame-ancestors 'none';
       ">
 
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.11.338/pdf.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.7.77/Tone.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/markdown-it/12.3.2/markdown-it.min.js"></script>
     
     <style>
         body { font-family: 'Inter', sans-serif; }
@@ -195,7 +194,12 @@
     </div>
 
     <script type="module">
-        // Firebase configuration from environment variables
+        // Set up PDF.js worker
+        if (typeof pdfjsLib !== 'undefined') {
+            pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.11.338/pdf.worker.min.js';
+        }
+
+        // Firebase configuration from environment variables (will be replaced by GitHub Actions)
         const firebaseConfig = {
             apiKey: "VITE_FIREBASE_API_KEY",
             authDomain: "VITE_FIREBASE_AUTH_DOMAIN",
@@ -214,22 +218,39 @@
         if (!isConfigValid) {
             console.error('Firebase configuration not properly injected');
             document.getElementById('config-error').classList.remove('hidden');
-            document.querySelector('.page').style.display = 'none';
-            return;
+            document.querySelectorAll('.page').forEach(p => p.style.display = 'none');
+            document.getElementById('loading-overlay').classList.add('hidden');
+            // Stop executing the rest of the module if config is invalid
+            throw new Error('Missing Firebase configuration');
         }
 
-        // Import Firebase modules
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-        import { getAnalytics, logEvent, setUserId } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-analytics.js";
-        import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-functions.js";
-
-        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.11.338/pdf.worker.min.js';
-        
         let app, auth, db, analytics, functions;
+        let addDoc, collection, serverTimestamp, getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut, getFirestore, getAnalytics, setUserId, getFunctions, httpsCallable;
+        
         try {
-            app = initializeApp(firebaseConfig);
+            // Dynamic imports for Firebase
+            const modules = await Promise.all([
+                import("https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js"),
+                import("https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js"),
+                import("https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js"),
+                import("https://www.gstatic.com/firebasejs/11.6.1/firebase-analytics.js"),
+                import("https://www.gstatic.com/firebasejs/11.6.1/firebase-functions.js")
+            ]);
+
+            const appMod = modules[0];
+            const authMod = modules[1];
+            const fsMod = modules[2];
+            const anMod = modules[3];
+            const fnMod = modules[4];
+
+            ({ initializeApp: appMod.initializeApp });
+            // Assign needed functions from modules
+            ({ getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } = authMod);
+            ({ getFirestore, collection, addDoc, serverTimestamp } = fsMod);
+            ({ getAnalytics, logEvent, setUserId } = anMod);
+            ({ getFunctions, httpsCallable } = fnMod);
+
+            app = appMod.initializeApp(firebaseConfig);
             auth = getAuth(app);
             db = getFirestore(app);
             analytics = getAnalytics(app);
@@ -238,10 +259,12 @@
         } catch (error) {
             console.error("Firebase initialization failed:", error);
             document.getElementById('config-error').classList.remove('hidden');
-            return;
+            document.querySelectorAll('.page').forEach(p => p.style.display = 'none');
+            document.getElementById('loading-overlay').classList.add('hidden');
+            throw error;
         }
 
-        // ---- Random live progress ----
+        // Loading progress functionality
         const LOADING_MESSAGES = [
             "Parsing your PDF…",
             "Counting buzzwords…",
@@ -253,15 +276,23 @@
             "Finding actionables…",
             "Preparing roast…"
         ];
+        
         let progressTimer = null;
         let progress = 0;
+        
         function startRandomProgress(message = "Starting…") {
+            const defaultLoader = document.getElementById('default-loader');
+            const evilLoader = document.getElementById('evil-loader');
+            const loadingOverlay = document.getElementById('loading-overlay');
+            const progressBar = document.getElementById('progress-bar');
+            
             defaultLoader.style.display = 'none';
             evilLoader.style.display = 'flex';
             document.getElementById('loading-message').textContent = message;
             loadingOverlay.classList.remove('hidden');
             progress = 0;
             progressBar.style.width = '0%';
+            
             progressTimer = setInterval(() => {
                 if (Math.random() < 0.35) {
                     const m = LOADING_MESSAGES[Math.floor(Math.random() * LOADING_MESSAGES.length)];
@@ -270,11 +301,15 @@
                 const bump = 2 + Math.random() * 6;
                 const cap = 90;
                 progress = Math.min(progress + bump, cap);
-                progressBar.style.width = `${progress}%`;
+                document.getElementById('progress-bar').style.width = `${progress}%`;
             }, 600);
         }
+        
         function finishRandomProgress(finalMessage = "Done!") {
             if (progressTimer) clearInterval(progressTimer);
+            const progressBar = document.getElementById('progress-bar');
+            const loadingOverlay = document.getElementById('loading-overlay');
+            
             progress = 100;
             progressBar.style.width = '100%';
             document.getElementById('loading-message').textContent = finalMessage;
@@ -306,7 +341,7 @@
 
         const rateLimiter = new RateLimit();
 
-        // User activity logging functions
+        // User activity logging
         async function logUserActivity(activityType, details = {}) {
             const user = auth.currentUser;
             if (!user) return;
@@ -322,11 +357,15 @@
                     userAgent: navigator.userAgent
                 });
                 
-                logEvent(analytics, activityType, {
-                    user_name: user.displayName,
-                    user_email: user.email,
-                    ...details
-                });
+                // Analytics event (best-effort)
+                try {
+                    const { logEvent } = await import("https://www.gstatic.com/firebasejs/11.6.1/firebase-analytics.js");
+                    logEvent(analytics, activityType, {
+                        user_name: user.displayName,
+                        user_email: user.email,
+                        ...details
+                    });
+                } catch (_) { /* ignore */ }
                 
                 console.log('Activity logged:', activityType, details);
             } catch (error) {
@@ -334,31 +373,26 @@
             }
         }
 
+        // DOM elements
         const loginPage = document.getElementById('loginPage');
         const appPage = document.getElementById('appPage');
         const loginButton = document.getElementById('loginButton');
         const logoutButton = document.getElementById('logoutButton');
         const loadingOverlay = document.getElementById('loading-overlay');
-        const defaultLoader = document.getElementById('default-loader');
-        const evilLoader = document.getElementById('evil-loader');
-        const progressBar = document.getElementById('progress-bar');
         
         function showPage(pageId) { 
             document.querySelectorAll('.page').forEach(p => p.classList.remove('active')); 
             document.getElementById(pageId)?.classList.add('active'); 
         }
         
-        function showLoading(show, message = 'Loading...', isEvil = false) {
+        function showLoading(show, message = 'Loading...') {
+            const defaultLoader = document.getElementById('default-loader');
+            const evilLoader = document.getElementById('evil-loader');
+            
             if (show) {
-                if (isEvil) {
-                    defaultLoader.style.display = 'none';
-                    evilLoader.style.display = 'flex';
-                    document.getElementById('loading-message').textContent = message;
-                } else {
-                    defaultLoader.style.display = 'block';
-                    evilLoader.style.display = 'none';
-                    defaultLoader.querySelector('p').textContent = message;
-                }
+                defaultLoader.style.display = 'block';
+                evilLoader.style.display = 'none';
+                defaultLoader.querySelector('p').textContent = message;
             }
             loadingOverlay.classList.toggle('hidden', !show);
         }
@@ -372,6 +406,7 @@
             } catch (err) { 
                 console.error('Sign in error:', err); 
                 showLoading(false); 
+                alert('Sign-in failed. Please try again.');
             }
         }
         
@@ -383,13 +418,14 @@
             } catch (err) { 
                 console.error('Sign out error:', err); 
                 showLoading(false); 
+                alert('Sign-out failed. Please try again.');
             }
         }
         
         onAuthStateChanged(auth, user => { 
             showLoading(true, 'Initializing...');
             if (user) { 
-                setUserId(analytics, user.uid);
+                try { setUserId(analytics, user.uid); } catch (_) {}
                 
                 logUserActivity('login', {
                     loginMethod: 'google',
@@ -402,7 +438,7 @@
                 updateUIForUser(user); 
                 showPage('appPage'); 
             } else { 
-                setUserId(analytics, null);
+                try { setUserId(analytics, null); } catch (_) {}
                 showPage('loginPage'); 
             } 
             showLoading(false); 
@@ -410,15 +446,16 @@
         
         function updateUIForUser(user) { 
             if (user) { 
-                document.getElementById('userName').textContent = user.displayName; 
-                document.getElementById('userEmail').textContent = user.email; 
-                document.getElementById('userAvatar').src = user.photoURL; 
+                document.getElementById('userName').textContent = user.displayName || 'User'; 
+                document.getElementById('userEmail').textContent = user.email || ''; 
+                document.getElementById('userAvatar').src = user.photoURL || ''; 
             } 
         }
         
         loginButton.addEventListener('click', signInWithGoogle);
         logoutButton.addEventListener('click', performSignOut);
 
+        // File handling
         const uploadZone = document.getElementById('upload-zone');
         const fileInput = document.getElementById('file-input');
         const filePreview = document.getElementById('file-preview');
@@ -432,9 +469,30 @@
         let uploadedFile = null;
         
         uploadZone.addEventListener('click', () => fileInput.click());
-        fileInput.addEventListener('change', (e) => { if (e.target.files.length > 0) handleFile(e.target.files[0]); });
+        fileInput.addEventListener('change', (e) => { 
+            if (e.target.files.length > 0) handleFile(e.target.files[0]); 
+        });
         
-        // Enhanced file handling with security checks
+        // Drag & drop support
+        ['dragenter','dragover','dragleave','drop'].forEach(evt => {
+            uploadZone.addEventListener(evt, (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+            });
+        });
+        ['dragenter','dragover'].forEach(evt => {
+            uploadZone.addEventListener(evt, () => uploadZone.classList.add('border-indigo-400'));
+        });
+        ['dragleave','drop'].forEach(evt => {
+            uploadZone.addEventListener(evt, () => uploadZone.classList.remove('border-indigo-400'));
+        });
+        uploadZone.addEventListener('drop', (e) => {
+            const dt = e.dataTransfer;
+            if (dt && dt.files && dt.files.length > 0) {
+                handleFile(dt.files[0]);
+            }
+        });
+        
         function handleFile(file) {
             if (file.type !== 'application/pdf') {
                 alert('Please upload only PDF files.');
@@ -467,25 +525,29 @@
             resultsSection.classList.add('hidden'); 
         });
 
-        // Tone.js Evil Laugh
+        // Audio functionality
         let synth;
         function playEvilLaugh() {
             if (typeof Tone === 'undefined') return;
-            if (!synth) {
-                synth = new Tone.Synth({
-                    oscillator: { type: 'sine' },
-                    envelope: { attack: 0.005, decay: 0.1, sustain: 0.3, release: 1 }
-                }).toDestination();
+            try {
+                if (!synth) {
+                    synth = new Tone.Synth({
+                        oscillator: { type: 'sine' },
+                        envelope: { attack: 0.005, decay: 0.1, sustain: 0.3, release: 1 }
+                    }).toDestination();
+                }
+                const now = Tone.now();
+                synth.triggerAttackRelease("C4", "8n", now);
+                synth.triggerAttackRelease("A3", "8n", now + 0.2);
+                synth.triggerAttackRelease("G3", "8n", now + 0.4);
+                synth.triggerAttackRelease("E3", "8n", now + 0.6);
+                synth.triggerAttackRelease("C3", "4n", now + 0.8);
+            } catch (error) {
+                console.log('Audio not available:', error);
             }
-            const now = Tone.now();
-            synth.triggerAttackRelease("C4", "8n", now);
-            synth.triggerAttackRelease("A3", "8n", now + 0.2);
-            synth.triggerAttackRelease("G3", "8n", now + 0.4);
-            synth.triggerAttackRelease("E3", "8n", now + 0.6);
-            synth.triggerAttackRelease("C3", "4n", now + 0.8);
         }
 
-        // Enhanced PDF extraction with security limits
+        // PDF extraction
         async function extractPDFContent(file) {
             try {
                 const arrayBuffer = await file.arrayBuffer();
@@ -515,7 +577,7 @@
             }
         }
 
-        // Enhanced AI roast generation with security
+        // AI roast generation
         async function generateAIRoast(cvContent) {
             try {
                 if (cvContent.length < 100) {
@@ -526,18 +588,26 @@
                 if (!result.data || !result.data.roast) {
                     throw new Error('Invalid response from server.');
                 }
-                const md = window.markdownit({
-                    html: false,
-                    breaks: true,
-                    linkify: true
-                });
-                return md.render(result.data.roast);
+                
+                // Use markdown-it if available
+                if (typeof markdownit !== 'undefined') {
+                    const md = markdownit({
+                        html: false,
+                        breaks: true,
+                        linkify: true
+                    });
+                    return md.render(result.data.roast);
+                } else {
+                    // Fallback to simple text formatting
+                    return `<pre style="white-space: pre-wrap; font-family: inherit;">${result.data.roast}</pre>`;
+                }
             } catch (error) {
                 console.error("Cloud Function Error:", error);
                 throw new Error('Unable to process your CV at this time. Please try again later.');
             }
         }
 
+        // Main roast functionality
         roastBtn.addEventListener('click', async () => {
             if (!uploadedFile) return;
             
@@ -577,21 +647,17 @@
 
                 finishRandomProgress("Roast served!");
             } catch (error) {
-                console.error('Error during roasting:', error);
+                console.error(error);
                 await logUserActivity('cv_roast_failed', {
-                    fileName: uploadedFile.name,
-                    error: error.message,
-                    success: false
+                    fileName: uploadedFile?.name,
+                    message: error?.message || 'Unknown error'
                 });
-                roastContent.innerHTML = `<div class="p-4 bg-red-100 text-red-800 rounded-lg"><h3 class="font-bold">Roast Failed!</h3><p>${error.message}</p></div>`;
-                resultsSection.classList.remove('hidden');
-                finishRandomProgress("Something went wrong");
+                finishRandomProgress('Something went wrong');
+                alert(error?.message || 'Unable to roast your CV right now.');
             } finally {
-                roastBtn.disabled = false;
+                roastBtn.disabled = !uploadedFile;
             }
         });
     </script>
-    
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/markdown-it/12.3.2/markdown-it.min.js"></script>
 </body>
 </html>
