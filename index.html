@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AI CV Roaster 🔥</title>
 
-    <!-- Content Security Policy -->
+    <!-- Content Security Policy (single, deduped) -->
     <meta http-equiv="Content-Security-Policy"
       content="
         default-src 'self';
@@ -34,6 +34,7 @@
         base-uri 'self';
         frame-ancestors 'none';
       ">
+
 
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
@@ -85,15 +86,6 @@
             0%, 18%, 22%, 25%, 53%, 57%, 100% { text-shadow: 0 0 4px #fff, 0 0 11px #fff, 0 0 19px #fff, 0 0 40px #a21caf, 0 0 80px #a21caf, 0 0 90px #a21caf, 0 0 100px #a21caf, 0 0 150px #a21caf; }
             20%, 24%, 55% { text-shadow: none; }
         }
-
-        .config-error {
-            background: #fee2e2;
-            border: 2px solid #fca5a5;
-            border-radius: 0.5rem;
-            padding: 1rem;
-            margin: 1rem 0;
-            color: #991b1b;
-        }
     </style>
 </head>
 <body class="bg-gradient-to-br from-indigo-500 to-purple-600 min-h-screen flex items-center justify-center p-4">
@@ -110,13 +102,6 @@
             </div>
             <div id="evil-laugh">Mwa-ha-ha-ha...</div>
         </div>
-    </div>
-
-    <!-- Configuration Error Display -->
-    <div id="config-error" class="config-error hidden">
-        <h3 class="font-bold text-lg">⚠️ Configuration Error</h3>
-        <p>Firebase configuration is missing. Please check your deployment setup.</p>
-        <p class="text-sm mt-2">If you're the developer, ensure environment variables are properly configured in GitHub Actions.</p>
     </div>
 
     <div id="loginPage" class="page w-full max-w-md">
@@ -195,29 +180,6 @@
     </div>
 
     <script type="module">
-        // Firebase configuration from environment variables
-        const firebaseConfig = {
-            apiKey: "VITE_FIREBASE_API_KEY",
-            authDomain: "VITE_FIREBASE_AUTH_DOMAIN",
-            projectId: "VITE_FIREBASE_PROJECT_ID",
-            storageBucket: "VITE_FIREBASE_STORAGE_BUCKET",
-            messagingSenderId: "VITE_FIREBASE_MESSAGING_SENDER_ID",
-            appId: "VITE_FIREBASE_APP_ID",
-            measurementId: "VITE_FIREBASE_MEASUREMENT_ID"
-        };
-
-        // Check if configuration is properly injected
-        const isConfigValid = Object.values(firebaseConfig).every(value => 
-            value && !value.startsWith('VITE_')
-        );
-
-        if (!isConfigValid) {
-            console.error('Firebase configuration not properly injected');
-            document.getElementById('config-error').classList.remove('hidden');
-            document.querySelector('.page').style.display = 'none';
-            return;
-        }
-
         // Import Firebase modules
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
@@ -226,6 +188,16 @@
         import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-functions.js";
 
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.11.338/pdf.worker.min.js';
+        
+        const firebaseConfig = {
+            apiKey: "AIzaSyBfU68cYcygE_tGE-Z5XoYIZyyU1rqAsT8",
+            authDomain: "cvroast-b2f62.firebaseapp.com",
+            projectId: "cvroast-b2f62",
+            storageBucket: "cvroast-b2f62.firebasestorage.app",
+            messagingSenderId: "489801622191",
+            appId: "1:489801622191:web:5b1a487900c8cd78d9aa5a",
+            measurementId: "G-S5V03WRTTY"
+        };
         
         let app, auth, db, analytics, functions;
         try {
@@ -237,11 +209,9 @@
             console.log("Firebase initialized successfully.");
         } catch (error) {
             console.error("Firebase initialization failed:", error);
-            document.getElementById('config-error').classList.remove('hidden');
-            return;
         }
 
-        // ---- Random live progress ----
+        // ---- Random live progress (new) ----
         const LOADING_MESSAGES = [
             "Parsing your PDF…",
             "Counting buzzwords…",
@@ -267,7 +237,7 @@
                     const m = LOADING_MESSAGES[Math.floor(Math.random() * LOADING_MESSAGES.length)];
                     document.getElementById('loading-message').textContent = m;
                 }
-                const bump = 2 + Math.random() * 6;
+                const bump = 2 + Math.random() * 6; // 2–8%
                 const cap = 90;
                 progress = Math.min(progress + bump, cap);
                 progressBar.style.width = `${progress}%`;
@@ -280,10 +250,11 @@
             document.getElementById('loading-message').textContent = finalMessage;
             setTimeout(() => loadingOverlay.classList.add('hidden'), 300);
         }
+        // ------------------------------------
 
         // Rate limiting class
         class RateLimit {
-            constructor(maxRequests = 5, timeWindow = 300000) {
+            constructor(maxRequests = 5, timeWindow = 300000) { // 5 requests per 5 minutes
                 this.maxRequests = maxRequests;
                 this.timeWindow = timeWindow;
                 this.requests = [];
@@ -440,7 +411,8 @@
                 alert('Please upload only PDF files.');
                 return;
             }
-            const maxSize = 8 * 1024 * 1024;
+            // File size validation (max 8MB)
+            const maxSize = 8 * 1024 * 1024; // 8MB
             if (file.size > maxSize) {
                 alert('File size must be less than 8MB.');
                 return;
@@ -467,7 +439,7 @@
             resultsSection.classList.add('hidden'); 
         });
 
-        // Tone.js Evil Laugh
+        // Tone.js Evil Laugh (kept)
         let synth;
         function playEvilLaugh() {
             if (typeof Tone === 'undefined') return;
@@ -553,6 +525,7 @@
                 fileSizeKB: Math.round(uploadedFile.size / 1024)
             });
             
+            // Random live progress
             startRandomProgress("Warming up the roast…");
             playEvilLaugh();
 
