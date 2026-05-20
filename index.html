@@ -91,7 +91,7 @@
                 </h2>
                 <div class="text-xs text-gray-700 font-semibold flex items-center gap-2">
                     <span class="inline-block w-2 h-2 rounded-full bg-gray-400" id="model-dot"></span>
-                    <span id="model-pill">Llama 3.2 3B · loading…</span>
+                    <span id="model-pill">Llama 3.2 1B · loading…</span>
                 </div>
             </nav>
 
@@ -154,7 +154,7 @@
                         🔥 Roast My CV!
                     </button>
                     <p id="model-status" class="text-xs text-gray-600 mt-3">
-                        Loading Llama 3.2 3B in the background (~1.7 GB on first visit, cached afterwards).
+                        Loading Llama 3.2 1B in the background (~700 MB on first visit, cached afterwards).
                     </p>
                 </div>
 
@@ -194,7 +194,7 @@
         const modelDot        = document.getElementById('model-dot');
         const webgpuWarning   = document.getElementById('webgpu-warning');
 
-        const MODEL_ID = "Llama-3.2-3B-Instruct-q4f16_1-MLC";
+        const MODEL_ID = "Llama-3.2-1B-Instruct-q4f16_1-MLC";
 
         let uploadedFile  = null;
         let engine        = null;   // cached MLCEngine
@@ -358,7 +358,7 @@
         }
 
         async function loadEngine() {
-            setPill('Llama 3.2 3B · loading…', 'bg-amber-400 animate-pulse');
+            setPill('Llama 3.2 1B · loading…', 'bg-amber-400 animate-pulse');
             showLoading('Downloading the brain… 🧠', 0,
                         'First visit only — model is cached in your browser after this.');
 
@@ -370,12 +370,12 @@
             try {
                 engine = await webllm.CreateMLCEngine(MODEL_ID, { initProgressCallback });
                 loadedModelId = MODEL_ID;
-                setPill('Llama 3.2 3B · ready', 'bg-green-500');
+                setPill('Llama 3.2 1B · ready', 'bg-green-500');
                 modelStatus.textContent = 'Model ready. Drop a PDF to get roasted.';
                 hideLoading();
                 return engine;
             } catch (err) {
-                setPill('Llama 3.2 3B · failed', 'bg-red-500');
+                setPill('Llama 3.2 1B · failed', 'bg-red-500');
                 modelStatus.textContent = `Model load failed: ${err.message || err}`;
                 hideLoading();
                 throw err;
