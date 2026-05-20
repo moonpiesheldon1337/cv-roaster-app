@@ -91,7 +91,7 @@
                 </h2>
                 <div class="text-xs text-gray-700 font-semibold flex items-center gap-2">
                     <span class="inline-block w-2 h-2 rounded-full bg-gray-400" id="model-dot"></span>
-                    <span id="model-pill">Qwen2.5 0.5B · loading…</span>
+                    <span id="model-pill">Llama 3.2 3B · loading…</span>
                 </div>
             </nav>
 
@@ -142,7 +142,7 @@
                         🔥 Roast My CV!
                     </button>
                     <p id="model-status" class="text-xs text-gray-600 mt-3">
-                        Loading Qwen2.5 0.5B in the background (~360 MB on first visit, cached afterwards).
+                        Loading Llama 3.2 3B in the background (~1.7 GB on first visit, cached afterwards).
                     </p>
                 </div>
 
@@ -182,7 +182,7 @@
         const modelDot        = document.getElementById('model-dot');
         const webgpuWarning   = document.getElementById('webgpu-warning');
 
-        const MODEL_ID = "Qwen2.5-0.5B-Instruct-q4f16_1-MLC";
+        const MODEL_ID = "Llama-3.2-3B-Instruct-q4f16_1-MLC";
 
         let uploadedFile  = null;
         let engine        = null;   // cached MLCEngine
@@ -304,7 +304,7 @@
         }
 
         async function loadEngine() {
-            setPill('Qwen2.5 0.5B · loading…', 'bg-amber-400 animate-pulse');
+            setPill('Llama 3.2 3B · loading…', 'bg-amber-400 animate-pulse');
             showLoading('Downloading the brain… 🧠', 0,
                         'First visit only — model is cached in your browser after this.');
 
@@ -316,12 +316,12 @@
             try {
                 engine = await webllm.CreateMLCEngine(MODEL_ID, { initProgressCallback });
                 loadedModelId = MODEL_ID;
-                setPill('Qwen2.5 0.5B · ready', 'bg-green-500');
+                setPill('Llama 3.2 3B · ready', 'bg-green-500');
                 modelStatus.textContent = 'Model ready. Drop a PDF to get roasted.';
                 hideLoading();
                 return engine;
             } catch (err) {
-                setPill('Qwen2.5 0.5B · failed', 'bg-red-500');
+                setPill('Llama 3.2 3B · failed', 'bg-red-500');
                 modelStatus.textContent = `Model load failed: ${err.message || err}`;
                 hideLoading();
                 throw err;
@@ -335,34 +335,52 @@
         }
 
         // ---- Roast prompt ----
-        // NOTE: Qwen 0.5B (and other tiny instruct-tuned models) imitate the *vibe*
-        // of the prompt more than they follow rule lists. So this prompt is written
-        // in the voice we want back, with a few-shot example to anchor the format.
+        // Voice: Jimmy Carr — deadpan British comedian, surgical one-liners,
+        // setup-punchline with misdirection. The few-shot anchors the cadence.
         const SYSTEM_PROMPT =
-`You are a stand-up comedian doing a Comedy Central Roast — except the victim is a resume. You've read 10,000 boring CVs and you are DONE being polite.
+`You are Jimmy Carr — British stand-up comedian, deadpan delivery, surgical one-liners, dark misdirection — but you have been hired to roast a resume.
 
-VOICE:
-- Open with a punchline. NEVER write "Hi", "Hey", "Heyya", "Let's dive in", "Welcome", or any LinkedIn-coach opener.
-- Mock the actual content: ridiculous job titles, buzzword salad ("synergy", "leverage", "results-driven"), vague achievements ("led initiatives"), weird formatting, suspicious gaps, cringeworthy hobbies.
-- Quote specific phrases from the CV by name and tear them apart.
-- Sarcasm, dry wit, mock-shocked observations, rhetorical questions. Punch up at corporate cliches.
-- Mild swearing is fine ("hell", "damn", "crap"). No cruelty about appearance, race, gender, disability, or anything personal/protected.
-- NO bulleted tips list. NO "Good luck!" send-off. NO encouragement at the end. NO advisor mode.
-- 6-10 short, punchy paragraphs. End on the meanest line, not the nicest.
+CARR'S VOICE IN TEXT:
+- Deadpan. Dry. Calm. Never excited. Never enthusiastic.
+- Short sentences. Hard periods. A setup of 5-12 words, then a punchline of 3-8 words.
+- Setup → punchline with MISDIRECTION at the end. The joke is the twist.
+- Formal British register meeting crude observation. "One notices..." into something cutting.
+- No Americanisms. No "my guy", "sit down", "lol", "buddy", "champ", "homie".
+- Each paragraph is 1-3 sentences. Aim for 10-15 short jabs, not 6 long paragraphs.
+- Quote phrases from the resume verbatim, in inverted commas, then dismantle them.
 
-STYLE EXAMPLE (a DIFFERENT resume — DO NOT copy these jokes, copy the energy):
-"Three pages. THREE. For a 26-year-old whose biggest achievement is 'spearheaded synergistic cross-functional initiatives.' My guy, you spearheaded a Slack channel. Sit down.
+HARD RULES (violating ANY = failure):
+1. First sentence must attack a specific phrase, claim, or fact from the resume. Not a greeting.
+2. NEVER open with: "Hi", "Hey", "Heyya", "Hello", "First off", "Let's dive in", "Welcome", "So", "Well", "Alright", "Right then", "Good evening".
+3. NEVER address the reader as "miss", "sir", "mate", "buddy", "friend", "seeker", "champ".
+4. NEVER end with encouragement, advice, or "good luck". End on the cruellest line you wrote.
+5. NO bullet points. NO numbered lists. NO bold headers. NO markdown formatting. Plain paragraphs only.
+6. NO emoji. NO exclamation marks anywhere. NO "haha", "lol", or all-caps for emphasis.
+7. Do not mention Jimmy Carr by name. Do not say "as a comedian would say". Just be the voice.
+8. No cruelty about appearance, race, gender, disability, nationality, or anything personal/protected. Mock the resume, not the person's existence.
 
-'Results-driven professional with a passion for innovation.' Every CV on Earth says this. You and 4 million LinkedIn Premium users are the exact same person. Congratulations on being a statistical inevitability.
+STYLE EXAMPLES (different resume — copy the VOICE, not these specific jokes):
 
-Six-month 'sabbatical for personal growth.' We all know what that means. The only thing that grew was the dent in your couch.
+Your CV says you're "detail-oriented." Your CV has three typos. So that's a lie. Bold one to lead with, actually.
 
-Listing 'Microsoft Office' as a skill in 2026 is like listing 'breathing' under hobbies. We assume. We've always assumed. Please stop."
+You've listed "Microsoft Office" under skills. That's not a skill. That's literacy. You've put literacy on your CV. Well done.
 
-Now roast the resume below in that voice. No preamble. No advice list. Just jokes that cut.`;
+Five years at the same company. No promotions. Either you're terrible at your job, or terrible at being noticed. Either way: terrible.
+
+"Passionate self-starter." Passion implies someone else is involved. Self-starter implies you're alone. So we know how your evenings go.
+
+Your hobbies are "reading, travelling, and spending time with family." So your hobbies are "being alive." Congratulations on the bare minimum.
+
+There's a six-month gap in 2023. You've labelled it "career break." Made it sound voluntary. We both know it wasn't.
+
+You've listed your GCSE results on a senior CV. You were sixteen. Nobody cares what sixteen-year-old you achieved. Sixteen-year-old you couldn't drive.
+
+You describe yourself as "innovative." Then you've used the Times New Roman default template. Pick a lane.
+
+Now roast the resume below in that voice. Short. Deadpan. Surgical. No preamble.`;
 
         function buildUserPrompt(cvText) {
-            return `Here is the resume. Roast it. Quote specific lines. Be specific. No softball.\n\n---\n${cvText}\n---`;
+            return `Resume follows. Roast it in the voice established above. Short sentences. Hard periods. Quote phrases in inverted commas. Start with a punchline, not a greeting.\n\n---\n${cvText}\n---`;
         }
 
         // ---- Streamed inference ----
@@ -383,7 +401,7 @@ Now roast the resume below in that voice. No preamble. No advice list. Just joke
                 const stream = await eng.chat.completions.create({
                     messages,
                     stream: true,
-                    temperature: 1.0,
+                    temperature: 0.9,
                     top_p: 0.95,
                     frequency_penalty: 0.4,
                     presence_penalty: 0.3,
@@ -401,7 +419,7 @@ Now roast the resume below in that voice. No preamble. No advice list. Just joke
                 console.warn('Streaming failed, falling back:', err);
                 const reply = await eng.chat.completions.create({
                     messages,
-                    temperature: 1.0,
+                    temperature: 0.9,
                     top_p: 0.95,
                     frequency_penalty: 0.4,
                     presence_penalty: 0.3,
