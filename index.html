@@ -318,7 +318,14 @@
             };
 
             try {
-                engine = await webllm.CreateMLCEngine(MODEL_ID, { initProgressCallback });
+                // Use explicit two-step pattern instead of CreateMLCEngine.
+                // CreateMLCEngine sometimes resolves before the model is truly
+                // ready for inference (GitHub issue mlc-ai/web-llm#477) — manifests
+                // as "Model not loaded before trying to complete ChatCompletionRequest"
+                // even though the progress callback hit 100%. Calling reload()
+                // explicitly is the documented robust pattern.
+                engine = new webllm.MLCEngine({ initProgressCallback });
+                await engine.reload(MODEL_ID);
                 loadedModelId = MODEL_ID;
                 setPill('Llama 3.2 1B · ready', 'bg-green-500');
                 modelStatus.textContent = 'Model ready. Drop a PDF to get roasted.';
