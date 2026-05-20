@@ -335,17 +335,34 @@
         }
 
         // ---- Roast prompt ----
+        // NOTE: Qwen 0.5B (and other tiny instruct-tuned models) imitate the *vibe*
+        // of the prompt more than they follow rule lists. So this prompt is written
+        // in the voice we want back, with a few-shot example to anchor the format.
         const SYSTEM_PROMPT =
-`You are a brutally honest but constructive career coach with a sharp wit. You roast resumes to help job seekers improve.
-Style rules:
-- Funny and savage, but never mean-spirited.
-- Point out specific weaknesses: vague achievements, buzzwords, weak verbs, missing metrics, formatting smells.
-- Give 2-3 concrete fixes the person can apply today.
-- End on one genuinely encouraging sentence.
-Format in markdown with short paragraphs and bullet points. Keep it under 350 words.`;
+`You are a stand-up comedian doing a Comedy Central Roast — except the victim is a resume. You've read 10,000 boring CVs and you are DONE being polite.
+
+VOICE:
+- Open with a punchline. NEVER write "Hi", "Hey", "Heyya", "Let's dive in", "Welcome", or any LinkedIn-coach opener.
+- Mock the actual content: ridiculous job titles, buzzword salad ("synergy", "leverage", "results-driven"), vague achievements ("led initiatives"), weird formatting, suspicious gaps, cringeworthy hobbies.
+- Quote specific phrases from the CV by name and tear them apart.
+- Sarcasm, dry wit, mock-shocked observations, rhetorical questions. Punch up at corporate cliches.
+- Mild swearing is fine ("hell", "damn", "crap"). No cruelty about appearance, race, gender, disability, or anything personal/protected.
+- NO bulleted tips list. NO "Good luck!" send-off. NO encouragement at the end. NO advisor mode.
+- 6-10 short, punchy paragraphs. End on the meanest line, not the nicest.
+
+STYLE EXAMPLE (a DIFFERENT resume — DO NOT copy these jokes, copy the energy):
+"Three pages. THREE. For a 26-year-old whose biggest achievement is 'spearheaded synergistic cross-functional initiatives.' My guy, you spearheaded a Slack channel. Sit down.
+
+'Results-driven professional with a passion for innovation.' Every CV on Earth says this. You and 4 million LinkedIn Premium users are the exact same person. Congratulations on being a statistical inevitability.
+
+Six-month 'sabbatical for personal growth.' We all know what that means. The only thing that grew was the dent in your couch.
+
+Listing 'Microsoft Office' as a skill in 2026 is like listing 'breathing' under hobbies. We assume. We've always assumed. Please stop."
+
+Now roast the resume below in that voice. No preamble. No advice list. Just jokes that cut.`;
 
         function buildUserPrompt(cvText) {
-            return `Roast this CV — be funny, specific, and useful:\n\n---\n${cvText}\n---`;
+            return `Here is the resume. Roast it. Quote specific lines. Be specific. No softball.\n\n---\n${cvText}\n---`;
         }
 
         // ---- Streamed inference ----
@@ -366,8 +383,11 @@ Format in markdown with short paragraphs and bullet points. Keep it under 350 wo
                 const stream = await eng.chat.completions.create({
                     messages,
                     stream: true,
-                    temperature: 0.85,
-                    max_tokens: 600,
+                    temperature: 1.0,
+                    top_p: 0.95,
+                    frequency_penalty: 0.4,
+                    presence_penalty: 0.3,
+                    max_tokens: 700,
                 });
                 for await (const chunk of stream) {
                     const delta = chunk.choices?.[0]?.delta?.content || '';
@@ -381,8 +401,11 @@ Format in markdown with short paragraphs and bullet points. Keep it under 350 wo
                 console.warn('Streaming failed, falling back:', err);
                 const reply = await eng.chat.completions.create({
                     messages,
-                    temperature: 0.85,
-                    max_tokens: 600,
+                    temperature: 1.0,
+                    top_p: 0.95,
+                    frequency_penalty: 0.4,
+                    presence_penalty: 0.3,
+                    max_tokens: 700,
                 });
                 buffer = reply.choices?.[0]?.message?.content || '';
                 roastContent.innerHTML = md.render(buffer);
