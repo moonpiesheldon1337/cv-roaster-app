@@ -155,9 +155,10 @@
     </div>
 
     <script type="module">
-        // WebLLM — high-performance in-browser LLM inference via WebGPU.
-        // Pulled as ESM at runtime so we don't need a build step.
-        import * as webllm from "https://esm.run/@mlc-ai/web-llm";
+        // Pinned to 0.2.79 — the version the official WebLLM docs site was built
+        // against. Bumping to latest (0.2.83) introduced "Object has already been
+        // disposed" errors mid-inference. Don't unpin without testing.
+        import * as webllm from "https://esm.run/@mlc-ai/web-llm@0.2.79";
 
         pdfjsLib.GlobalWorkerOptions.workerSrc =
             'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.11.338/pdf.worker.min.js';
@@ -408,36 +409,25 @@ Now roast the resume below in that voice. Short. Deadpan. Surgical. No preamble.
             roastContent.innerHTML =
                 '<p class="text-gray-500 italic">Roast incoming…</p>';
 
-            try {
-                const stream = await eng.chat.completions.create({
-                    messages,
-                    stream: true,
-                    temperature: 0.9,
-                    top_p: 0.95,
-                    frequency_penalty: 0.4,
-                    presence_penalty: 0.3,
-                    max_tokens: 700,
-                });
-                for await (const chunk of stream) {
-                    const delta = chunk.choices?.[0]?.delta?.content || '';
-                    if (delta) {
-                        buffer += delta;
-                        roastContent.innerHTML = md.render(buffer);
-                    }
+            // Single streaming call. NO inner try/catch fallback — if the engine
+            // errors mid-stream, retrying on the same engine triggers
+            // "Object has already been disposed" (mlc-ai/web-llm#486). Let the
+            // outer handler surface the error instead.
+            // Sampling params kept minimal — only `messages`, `stream`,
+            // `temperature`, `max_tokens`. Extra params like frequency_penalty
+            // are inconsistently supported across WebLLM model wrappers.
+            const stream = await eng.chat.completions.create({
+                messages,
+                stream: true,
+                temperature: 0.9,
+                max_tokens: 700,
+            });
+            for await (const chunk of stream) {
+                const delta = chunk.choices?.[0]?.delta?.content || '';
+                if (delta) {
+                    buffer += delta;
+                    roastContent.innerHTML = md.render(buffer);
                 }
-            } catch (err) {
-                // Fallback: non-streaming completion
-                console.warn('Streaming failed, falling back:', err);
-                const reply = await eng.chat.completions.create({
-                    messages,
-                    temperature: 0.9,
-                    top_p: 0.95,
-                    frequency_penalty: 0.4,
-                    presence_penalty: 0.3,
-                    max_tokens: 700,
-                });
-                buffer = reply.choices?.[0]?.message?.content || '';
-                roastContent.innerHTML = md.render(buffer);
             }
 
             if (!buffer.trim()) {
@@ -478,6 +468,17 @@ Now roast the resume below in that voice. Short. Deadpan. Surgical. No preamble.
                 await streamRoast(cvText);
             } catch (error) {
                 console.error('Roast failed:', error);
+                // If the engine errored out, it may be in a partial/disposed state.
+                // Null it so the next click triggers a fresh init. Model weights
+                // are cached in IndexedDB, so re-init is ~1-2 seconds.
+                const msg = String(error.message || error);
+                if (/dispos|engine|MLCEngine|chat|reload|webllm/i.test(msg)) {
+                    engine = null;
+                    loadedModelId = null;
+                    enginePromise = null;
+                    setPill('Llama 3.2 1B · will retry', 'bg-amber-400');
+                    modelStatus.textContent = 'Engine reset after error — click Roast again to retry.';
+                }
                 roastContent.innerHTML =
                     `<div class="p-4 bg-red-100 text-red-800 rounded-lg">
                         <h3 class="font-bold">Roast Failed!</h3>
