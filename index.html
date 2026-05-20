@@ -96,9 +96,21 @@
             </nav>
 
             <div class="p-8">
-                <div id="webgpu-warning" class="hidden mb-6 p-4 bg-red-100 text-red-800 rounded-xl">
-                    <h3 class="font-bold">⚠️ WebGPU not available</h3>
-                    <p class="text-sm mt-1">This app needs WebGPU to run the AI locally. Use Chrome / Edge 113+ or Safari 18+ on a machine with a GPU. Firefox needs <code>dom.webgpu.enabled</code> set in <code>about:config</code>.</p>
+                <div id="webgpu-warning" class="hidden mb-6 p-4 bg-red-100 text-red-900 rounded-xl">
+                    <h3 class="font-bold mb-2">⚠️ <span id="webgpu-warning-title">WebGPU not available</span></h3>
+                    <p id="webgpu-warning-detail" class="text-sm mb-2"></p>
+                    <details class="text-sm mt-2">
+                        <summary class="cursor-pointer font-semibold">How to fix this</summary>
+                        <ul class="list-disc list-inside mt-2 space-y-1">
+                            <li><strong>Enable hardware acceleration</strong> in your browser settings. Edge: <code>edge://settings/system</code> → "Use graphics acceleration when available." Chrome: <code>chrome://settings/system</code> → "Use hardware acceleration when available." Restart the browser after toggling.</li>
+                            <li><strong>Check WebGPU status</strong> at <code>chrome://gpu</code> or <code>edge://gpu</code> — look for "WebGPU" near the top. If it says "Disabled" or "Software only", your driver may be blocklisted.</li>
+                            <li><strong>Update your GPU drivers</strong> — old Intel/NVIDIA/AMD drivers are commonly blocklisted by Chromium.</li>
+                            <li><strong>Firefox</strong>: set <code>dom.webgpu.enabled</code> = true in <code>about:config</code>, then restart.</li>
+                            <li><strong>Corporate machines</strong>: IT policies often disable WebGPU. Try a personal device.</li>
+                            <li><strong>Remote desktop / VM</strong>: WebGPU usually doesn't work over RDP or in most VMs. Run on local hardware.</li>
+                            <li>Diagnose at <a href="https://webgpureport.org/" target="_blank" rel="noopener" class="underline">webgpureport.org</a>.</li>
+                        </ul>
+                    </details>
                 </div>
 
                 <div class="text-center mb-8">
@@ -187,15 +199,57 @@
         let uploadedFile  = null;
         let engine        = null;   // cached MLCEngine
         let loadedModelId = null;
+        let webgpuOk      = false;  // set true once preflight passes
 
         // ---- WebGPU support gate ----
-        if (!('gpu' in navigator)) {
+        // Don't just check `'gpu' in navigator` — that only tells us the API is
+        // exposed. We need to actually ask for an adapter and verify shader-f16,
+        // since the q4f16 model will fail to load without it.
+        async function preflightWebGPU() {
+            if (!('gpu' in navigator)) {
+                return {
+                    ok: false,
+                    title: 'WebGPU not available in this browser',
+                    detail: 'Your browser does not expose the WebGPU API at all. Use Chrome 113+, Edge 113+, or Safari 18+. Firefox requires a flag.'
+                };
+            }
+            let adapter;
+            try {
+                adapter = await navigator.gpu.requestAdapter();
+            } catch (e) {
+                return {
+                    ok: false,
+                    title: 'WebGPU adapter request failed',
+                    detail: `The browser tried to get a GPU adapter and threw: ${e.message || e}`
+                };
+            }
+            if (!adapter) {
+                return {
+                    ok: false,
+                    title: 'No compatible GPU adapter found',
+                    detail: 'Your browser exposes WebGPU but the system returned no GPU adapter. The most common cause is hardware acceleration being disabled in browser settings, an outdated GPU driver, or running over remote desktop / in a VM.'
+                };
+            }
+            if (!adapter.features.has('shader-f16')) {
+                return {
+                    ok: false,
+                    title: 'GPU is missing the shader-f16 feature',
+                    detail: 'This model needs the shader-f16 WebGPU feature, which your GPU/driver does not expose. Update your GPU driver, or try a desktop with a discrete GPU.'
+                };
+            }
+            return { ok: true, adapter };
+        }
+
+        function showWebGPUError(title, detail) {
+            document.getElementById('webgpu-warning-title').textContent = title;
+            document.getElementById('webgpu-warning-detail').textContent = detail;
             webgpuWarning.classList.remove('hidden');
-            modelStatus.textContent = 'WebGPU is required to run the AI locally.';
+            modelStatus.textContent = title;
             const pill = document.getElementById('model-pill');
             const dot  = document.getElementById('model-dot');
-            if (pill) pill.textContent = 'No WebGPU';
+            if (pill) pill.textContent = 'GPU unavailable';
             if (dot)  dot.className = 'inline-block w-2 h-2 rounded-full bg-red-500';
+            roastBtn.disabled = true;
         }
 
         // ---- Loading overlay helpers ----
@@ -262,7 +316,7 @@
             fileNameEl.textContent = safeName;
             fileSizeEl.textContent = `${(file.size / 1024 / 1024).toFixed(2)} MB`;
             filePreview.classList.remove('hidden');
-            roastBtn.disabled = !('gpu' in navigator);
+            roastBtn.disabled = !webgpuOk;
         }
 
         removeFileBtn.addEventListener('click', () => {
@@ -439,8 +493,8 @@ Now roast the resume below in that voice. Short. Deadpan. Surgical. No preamble.
         // ---- Main button ----
         roastBtn.addEventListener('click', async () => {
             if (!uploadedFile) return;
-            if (!('gpu' in navigator)) {
-                alert('WebGPU not supported in this browser.');
+            if (!webgpuOk) {
+                alert('WebGPU is unavailable on this system. See the red banner above for fixes.');
                 return;
             }
 
@@ -475,15 +529,27 @@ Now roast the resume below in that voice. Short. Deadpan. Surgical. No preamble.
                 resultsSection.classList.remove('hidden');
             } finally {
                 hideLoading();
-                roastBtn.disabled = !uploadedFile || !('gpu' in navigator);
+                roastBtn.disabled = !uploadedFile || !webgpuOk;
             }
         });
 
-        // ---- Kick off model download immediately on page load ----
-        if ('gpu' in navigator) {
+        // ---- Kick off preflight + model download on page load ----
+        (async () => {
+            const pre = await preflightWebGPU();
+            if (!pre.ok) {
+                showWebGPUError(pre.title, pre.detail);
+                return;
+            }
+            webgpuOk = true;
             // Don't await — let the page render; user can prep their PDF while it downloads.
-            ensureEngine().catch(err => console.error('Initial model load failed:', err));
-        }
+            ensureEngine().catch(err => {
+                console.error('Initial model load failed:', err);
+                showWebGPUError(
+                    'Model load failed',
+                    `WebLLM could not load the model: ${err.message || err}. This is usually a GPU driver, VRAM, or network issue. Check the browser console for details.`
+                );
+            });
+        })();
     </script>
 </body>
 </html>
